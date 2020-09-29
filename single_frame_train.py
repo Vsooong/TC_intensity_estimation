@@ -63,8 +63,8 @@ class Criterion(nn.Module):
 
 def main(train_process=False):
     device = args.device
-    dataset = TC_Data(years=[1995])
-    # dataset_test = TC_Data(years=args.test_years)
+    dataset = TC_Data()
+    dataset_test = TC_Data(years=args.test_years)
 
     model = get_pretrained_model()
     nParams = sum([p.nelement() for p in model.parameters()])
@@ -80,17 +80,18 @@ def main(train_process=False):
         for epoch in range(args.epochs):
             loss_epoch = train_one_epoch(model, dataset, optimizer, criterion)
             lr_scheduler.step()
+            print('Epoch:', epoch, loss_epoch)
             if loss_epoch < best_loss:
                 best_loss = loss_epoch
-                torch.save(model.state_dict(), os.path.join(args.save_model, 'resnet_18.pth'))
+                torch.save(model.state_dict(), os.path.join(args.save_model, 'resnet_50.pth'))
                 print('performance improved, save model to:', args.model_save1)
             if epoch % 3 == 0:
-                loss1, loss2 = evaluate(model, dataset)
-                print(loss1, loss2)
-            print('Epoch:', epoch, loss_epoch)
+                loss1, loss2 = evaluate(model, dataset_test)
+                print("test performance:",loss1, loss2)
+
         print('training finish ')
     else:
-        loss1, loss2 = evaluate(model, dataset)
+        loss1, loss2 = evaluate(model, dataset_test)
         print(loss1, loss2)
 
     # for epoch in range(args.epochs):

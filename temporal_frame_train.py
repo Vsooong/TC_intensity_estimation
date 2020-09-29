@@ -64,7 +64,7 @@ def main(train_process=False):
             lr_scheduler.step()
             if loss_epoch < best_loss:
                 best_loss = loss_epoch
-                torch.save(model.state_dict(), os.path.join(args.save_model, 'resnet_18.pth'))
+                torch.save(model.state_dict(), os.path.join(args.save_model, 'resnet_50.pth'))
                 print('performance improved, save model to:', args.model_save1)
             if epoch % 3 == 0:
                 loss1, loss2 = evaluate(model, dataset)

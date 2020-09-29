@@ -4,6 +4,7 @@ import argparse
 import torch
 import torch.nn.functional as F
 
+
 class activation():
 
     def __init__(self, act_type, negative_slope=0.2, inplace=True):
@@ -22,6 +23,7 @@ class activation():
         else:
             raise NotImplementedError
 
+
 def yaml_config_hook(config_file):
     """
     Custom YAML config loader, which can include other yaml files (I like using config files
@@ -29,7 +31,7 @@ def yaml_config_hook(config_file):
     """
 
     # load yaml files in the nested 'defaults' section, which include defaults for experiments
-    with open(config_file,'rb') as f:
+    with open(config_file, 'rb') as f:
         cfg = yaml.safe_load(f)
         for d in cfg.get("defaults", []):
             config_dir, cf = d.popitem()
@@ -46,21 +48,25 @@ def yaml_config_hook(config_file):
 
 def get_config():
     parser = argparse.ArgumentParser(description="estimation")
-    config = yaml_config_hook("../config_tc.yaml")
+    f = os.path.dirname(__file__)
+    f = os.path.join(os.path.dirname(f), "config_tc.yaml")
+    config = yaml_config_hook(f)
     for k, v in config.items():
         parser.add_argument(f"--{k}", default=v, type=type(v))
 
     args = parser.parse_args()
-    if not os.path.exists(args.model_path):
-        os.makedirs(args.model_path)
 
     for dirs in args.model_save1:
         if os.path.exists(dirs):
-            args.save_model=dirs
+            args.save_model = dirs
     args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args.num_gpus = torch.cuda.device_count()
     args.world_size = args.gpus * args.nodes
     args.rnn_act = activation('leaky', negative_slope=0.2, inplace=True)
+    for dirs in args.img_root_dir:
+        if os.path.exists(dirs):
+            args.img_root = dirs
     return args
 
-args=get_config()
+
+args = get_config()

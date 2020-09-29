@@ -7,7 +7,7 @@ from PIL import Image
 
 
 class TC_Data(Dataset):
-    def __init__(self, data_root='F:/data/TC_IR_IMAGE', years=args.train_years, past_window=args.past_window,
+    def __init__(self, data_root=args.img_root, years=args.train_years, past_window=args.past_window,
                  device=args.device):
         self.typhoons = self.init_years(data_root, years)
         self.past_window = past_window

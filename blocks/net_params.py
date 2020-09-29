@@ -41,6 +41,7 @@ encoder_params = [
     ]
 ]
 
+
 forecaster_params = [
     [
         OrderedDict({'deconv1_leaky_1': [128, 32, 4, 2, 0]}),
@@ -69,27 +70,28 @@ forecaster_params = [
     ]
 ]
 
+
 # build model
 convlstm_encoder_params = [
     [
-        OrderedDict({'conv1_leaky_1': [3, 16, 7, 5, 1]}),
-        OrderedDict({'conv2_leaky_1': [16, 64, 5, 3, 1]}),
-        OrderedDict({'conv3_leaky_1': [64, 256, 3, 2, 0]}),
+        OrderedDict({'conv1_leaky_1': [1, 8, 7, 5, 0]}),
+        OrderedDict({'conv2_leaky_1': [8, 32, 5, 3, 0]}),
+        OrderedDict({'conv3_leaky_1': [32, 128, 3, 2, 0]}),
     ],
 
     [
-        ConvLSTM(input_channel=16, num_filter=16, b_h_w=(72, 128),
+        ConvLSTM(input_channel=8, num_filter=8, b_h_w=(50, 50),
                  kernel_size=3, stride=1, padding=1),
-        ConvLSTM(input_channel=64, num_filter=64, b_h_w=(24, 42),
+        ConvLSTM(input_channel=32, num_filter=32, b_h_w=(16, 16),
                  kernel_size=3, stride=1, padding=1),
-        ConvLSTM(input_channel=256, num_filter=256, b_h_w=(11, 20),
+        ConvLSTM(input_channel=128, num_filter=128, b_h_w=(7, 7),
                  kernel_size=3, stride=1, padding=1),
     ]
 ]
 
 convlstm_forecaster_params = [
     [
-        OrderedDict({'deconv1_leaky_1': [128, 32, 3, 2, 0]}),
+        OrderedDict({'deconv1_leaky_1': [128, 32, 4, 2, 0]}),
         OrderedDict({'deconv2_leaky_1': [32, 8, 5, 3, 0]}),
         OrderedDict({
             'deconv3_leaky_1': [8, 8, 7, 5, 0],
@@ -99,14 +101,15 @@ convlstm_forecaster_params = [
     ],
 
     [
-        ConvLSTM(input_channel=128, num_filter=128, b_h_w=(4, 5),
+        ConvLSTM(input_channel=128, num_filter=128, b_h_w=(7, 7),
                  kernel_size=3, stride=1, padding=1),
-        ConvLSTM(input_channel=32, num_filter=32, b_h_w=(9, 12),
+        ConvLSTM(input_channel=32, num_filter=32, b_h_w=(16, 16),
                  kernel_size=3, stride=1, padding=1),
-        ConvLSTM(input_channel=8, num_filter=8, b_h_w=(32, 38),
+        ConvLSTM(input_channel=8, num_filter=8, b_h_w=(50, 50),
                  kernel_size=3, stride=1, padding=1),
     ]
 ]
+
 
 conv2d_params = OrderedDict({
     'conv1_relu_1': [5, 64, 7, 5, 1],
@@ -118,14 +121,14 @@ conv2d_params = OrderedDict({
     'conv3_relu_2': [64, 20, 3, 1, 1],
     'conv3_3': [20, 20, 1, 1, 0]
 })
+
 head_params = [
     OrderedDict([
-        ('conv1', nn.Conv2d(256, 256, 3, 2)),
-        ('conv2', nn.Conv2d(256, 512, 1, 1)),
-        ('maxpool1', nn.MaxPool2d(3, 3)),
-        ('flat1', Flatten())
+        ('maxpool1', nn.MaxPool2d(2, 2)),
+        ('conv1', nn.Conv2d(128, 256, 3, 1)),
+
     ])
 ]
 if __name__ == '__main__':
-    size = tensor_size_after_conv(360, 640, 7, 5,0)
+    size = tensor_size_after_conv(7, 7, 3, 1,0)
     print(size)

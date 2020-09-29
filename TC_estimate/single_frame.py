@@ -26,7 +26,9 @@ class Res_Est(nn.Module):
         self.projector = nn.Sequential(
             nn.Linear(self.n_feature, self.n_feature, bias=False),
             nn.LeakyReLU(),
-            nn.Linear(self.n_feature, 1, bias=False),
+            nn.Linear(self.n_feature, self.n_feature, bias=False),
+            nn.LeakyReLU(),
+            nn.Linear(self.n_feature, 1, bias=True),
             nn.LeakyReLU(),
         )
     def forward(self, x):

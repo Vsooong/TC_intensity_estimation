@@ -6,6 +6,7 @@ import os
 import numpy as np
 from TC_estimate.temporal_frame import get_pretrained_model
 
+
 def train_one_epoch(model, dataset, optimizer, criterion):
     model.train()
     loss_epoch = 0
@@ -33,14 +34,16 @@ def evaluate(model, dataset):
     for minibatch in dataset.get_batches():
         images, targets = minibatch
         pred = model(images)
+        targets = targets[:, -1, :]
+        # print(pred.shape,targets.shape)
         total_loss1 += evaluateL1(targets, pred).data.item()
         total_loss2 += evaluateL2(targets, pred).data.item()
         n_samples += len(targets)
         for index in range(len(targets)):
             labels.append(targets[index].data.item())
             predicts.append(pred[index].data.item())
-    print(np.corrcoef(labels, predicts))
-    return total_loss1 / n_samples, np.sqrt(total_loss2 / n_samples)
+    r = np.corrcoef(labels, predicts)[0][1]
+    return total_loss1 / n_samples, np.sqrt(total_loss2 / n_samples), r
 
 
 def main(train_process=False):
@@ -67,13 +70,13 @@ def main(train_process=False):
                 torch.save(model.state_dict(), os.path.join(args.save_model, 'resnet_50.pth'))
                 print('performance improved, save model to:', args.model_save1)
             if epoch % 3 == 0:
-                loss1, loss2 = evaluate(model, dataset)
-                print(loss1, loss2)
+                loss1, loss2, r = evaluate(model, dataset)
+                print(loss1, loss2, r)
             print('Epoch:', epoch, loss_epoch)
         print('training finish ')
     else:
-        loss1, loss2 = evaluate(model, dataset)
-        print(loss1, loss2)
+        loss1, loss2, r = evaluate(model, dataset)
+        print(loss1, loss2, r)
 
     # for epoch in range(args.epochs):
     #     # train for one epoch, printing every 10 iterations
@@ -87,4 +90,4 @@ def main(train_process=False):
 
 
 if __name__ == '__main__':
-    main(train_process=True)
+    main(train_process=False)

@@ -36,6 +36,9 @@ def get_config():
     if not os.path.exists(args.model_path):
         os.makedirs(args.model_path)
 
+    for dirs in args.model_save1:
+        if os.path.exists(dirs):
+            args.save_model=dirs
     args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args.num_gpus = torch.cuda.device_count()
     args.world_size = args.gpus * args.nodes

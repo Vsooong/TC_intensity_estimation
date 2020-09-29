@@ -130,7 +130,7 @@ def getOneTyphoon(dir):
             # pot=mpi-ori_intense
             # mvts.append([month, jday, hour, lat, lon, stp,centra_sst,mpi,pot,onsea,sl_ratio,pres])
             mvts.append([ori_intense])
-            im1 = Image.open(os.path.join(files[0], image)).convert("L")
+            im1 = Image.open(os.path.join(files[0], image)).convert("RGB")
             im1 = transform(im1)
             isi.append(im1)
     mvts = torch.tensor(mvts)

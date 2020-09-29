@@ -1,7 +1,7 @@
 import numpy as np
 import os
-from Plots.data_fitting import flatten, bias
-from Utils import args
+from Plots.data_fitting import flatten
+from utils.Utils import args
 
 
 
@@ -126,5 +126,6 @@ def intensity_match(cma_track, data_file='F:/data/TC_IR_IMAGE/'):
             match_one_ty(cma_track[id], names)
         # return
 
+if __name__ == '__main__':
 
-intensity_match(cma_track=get_cma_track())
+    intensity_match(cma_track=get_cma_track())

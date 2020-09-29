@@ -2,7 +2,25 @@ import os
 import yaml
 import argparse
 import torch
+import torch.nn.functional as F
 
+class activation():
+
+    def __init__(self, act_type, negative_slope=0.2, inplace=True):
+        super().__init__()
+        self._act_type = act_type
+        self.negative_slope = negative_slope
+        self.inplace = inplace
+
+    def __call__(self, input):
+        if self._act_type == 'leaky':
+            return F.leaky_relu(input, negative_slope=self.negative_slope, inplace=self.inplace)
+        elif self._act_type == 'relu':
+            return F.relu(input, inplace=self.inplace)
+        elif self._act_type == 'sigmoid':
+            return torch.sigmoid(input)
+        else:
+            raise NotImplementedError
 
 def yaml_config_hook(config_file):
     """
@@ -28,7 +46,7 @@ def yaml_config_hook(config_file):
 
 def get_config():
     parser = argparse.ArgumentParser(description="estimation")
-    config = yaml_config_hook("config_tc.yaml")
+    config = yaml_config_hook("../config_tc.yaml")
     for k, v in config.items():
         parser.add_argument(f"--{k}", default=v, type=type(v))
 
@@ -42,6 +60,7 @@ def get_config():
     args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args.num_gpus = torch.cuda.device_count()
     args.world_size = args.gpus * args.nodes
+    args.rnn_act = activation('leaky', negative_slope=0.2, inplace=True)
     return args
 
 args=get_config()

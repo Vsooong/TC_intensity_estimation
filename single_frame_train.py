@@ -1,12 +1,10 @@
 import torch
 import numpy as np
-from torchsummary import summary
 import os
 import torch.nn as nn
-from Utils import args
+from utils.Utils import args
 from TC_data import TC_Data
 from TC_estimate.single_frame import get_pretrained_model
-import torch.nn.functional as F
 
 
 def train_one_epoch(model, dataset, optimizer, criterion):

@@ -1,10 +1,9 @@
-from Utils import args
+from utils.Utils import args
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import torchvision.transforms as T
 import os
 from PIL import Image
-import numpy as np
 
 
 class TC_Data(Dataset):

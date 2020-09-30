@@ -51,7 +51,7 @@ def main(train_process=False):
     dataset = TC_Data()
     dataset_test = TC_Data(years=args.test_years)
 
-    model = get_pretrained_model()
+    model = get_pretrained_model(load_states=True)
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
     params = [p for p in model.parameters() if p.requires_grad]
@@ -67,8 +67,9 @@ def main(train_process=False):
             lr_scheduler.step()
             if loss_epoch < best_loss:
                 best_loss = loss_epoch
-                torch.save(model.state_dict(), os.path.join(args.save_model, 'convlstm.pth'))
-                print('performance improved, save model to:', args.save_model)
+                path = os.path.join(args.save_model, 'convlstm.pth')
+                torch.save(model.state_dict(), path)
+                print('performance improved, save model to:', path)
             if epoch % 3 == 0:
                 loss1, loss2, r = evaluate(model, dataset_test)
                 print("test performance:", loss1, loss2, r)

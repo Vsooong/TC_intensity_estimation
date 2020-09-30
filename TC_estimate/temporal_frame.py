@@ -34,6 +34,8 @@ def get_pretrained_model(load_states=False):
     if load_states and os.path.exists(path):
         model.load_state_dict(torch.load(path, map_location=args.device))
         print('load temporal model from:', path)
+    else:
+        print('training from scratch')
     return model
 
 

@@ -1,7 +1,7 @@
 import xarray
 import numpy as np
 from datetime import datetime
-from math import radians, sin, cos, acos
+from math import radians, sin, cos, atan2, sqrt, tan, degrees, asin
 import matplotlib.pyplot as plt
 import time as TM
 import os
@@ -9,15 +9,19 @@ import torch
 from utils.Utils import args
 
 
-def distance_on_earth(lat1, long1, lat2, long2):
-    slat = radians(lat1)
-    slon = radians(long1)
-    elat = radians(lat2)
-    elon = radians(long2)
+def distance_on_earth(lat1, lon1, lat2, lon2):
+    lat1 = radians(lat1)
+    lon1 = radians(lon1)
+    lat2 = radians(lat2)
+    lon2 = radians(lon2)
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
 
-    dist = 6371.01 * acos(sin(slat) * sin(elat) + cos(slat) * cos(elat) * cos(slon - elon))
-    return dist
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
+    distance = 6371.01 * c
+    return distance
 
 def select_area_nc(time, clat, clon, radius1, radius2, nc_file, max_lat, min_lon, select_mode):
     times, lats, lons = nc_file.shape
@@ -46,31 +50,69 @@ def select_area_nc(time, clat, clon, radius1, radius2, nc_file, max_lat, min_lon
     return values
 
 
+def cal_storm_translation_speed(lat1, lon1, lat2, lon2, hour=12):
+    dis = distance_on_earth(lat1, lon1, lat2, lon2)
+    # in km/h
+    speed = dis / hour
+    return speed
+
+
 def label_one_typhoon(dir):
-    print(dir)
     files = sorted([os.path.join(dir, i) for i in os.listdir(dir)])
     channel1 = sorted(os.listdir(files[0]))
-    for index in range(len(channel1)):
-        image = channel1[index]
-        if image.endswith('jpg'):
-            temp = image.split('-')
-            if str(temp[1]) not in args.time_spot:
-                continue
-            print(image)
-            date = temp[0]
-            hour = temp[1]
-            lat = temp[2]
-            lon = temp[3]
-            stp = temp[4]
-            centra_sst = temp[5]
-            # mpi=cal_MPI_from_SST(centra_sst)
-            onsea = temp[6]
-            sl_ratio = temp[7]
-            pres = temp[-2]
+    select_images = []
+    for image_name in channel1:
+        if image_name.endswith('jpg'):
+            temp = image_name.split('-')
+            if str(temp[1]) in args.time_spot:
+                select_images.append(image_name)
+    nums = len(select_images)
+    for index in range(nums):
+        image = select_images[index]
+        temp = image.split('-')
+        date = temp[0]
+        hour = temp[1]
+        lat = float(temp[2])
+        lon = float(temp[3])
+        pres = temp[-2]
+        ori_intense = temp[-1].split('.')[0]
+        if index == 0:
+            image_next = select_images[index + 1].split('-')
+            nlat, nlon = float(image_next[2]), float(image_next[3])
+            stp = cal_storm_translation_speed(lat, lon, nlat, nlon, 6)
+        elif index == nums - 1:
+            image_next = select_images[index - 1].split('-')
+            nlat, nlon = float(image_next[2]), float(image_next[3])
+            stp = cal_storm_translation_speed(lat, lon, nlat, nlon, 6)
+        else:
+            image_next = select_images[index + 1].split('-')
+            nlat, nlon = float(image_next[2]), float(image_next[3])
+            image_prev = select_images[index - 1].split('-')
+            plat, plon = float(image_prev[2]), float(image_prev[3])
+            stp = cal_storm_translation_speed(plat, plon, nlat, nlon, 12)
+        stp = np.round(stp, decimals=2)
 
-            ori_intense = temp[-1].split('.')[0]
-            ori_path = '-'.join([date, hour, lat, lon, stp, centra_sst, onsea, sl_ratio, pres, ori_intense])
-            print(ori_intense)
+        # new_name = '-'.join(
+        #     [temp[0], temp[1], temp[2], temp[3], str(stp), str(sst), str(oversea), str(sl_ratio), pres,
+        #      ori_intense])
+        # # print(new_name)
+        # os.rename(os.path.join(files[0], image), os.path.join(files[0], new_name))
+
+        # if len(temp)>6:
+        #     date = temp[0]
+        #     hour = temp[1]
+        #     lat = temp[2]
+        #     lon = temp[3]
+        #     stp = temp[4]
+        #     centra_sst = temp[5]
+        #     # mpi=cal_MPI_from_SST(centra_sst)
+        #     onsea = temp[6]
+        #     sl_ratio = temp[7]
+        #     pres = temp[-2]
+        #
+        #     ori_intense = temp[-1].split('.')[0]
+        #     ori_path = '-'.join([date, hour, lat, lon, stp, centra_sst, onsea, sl_ratio, pres, ori_intense])
+        #     print(ori_path)
 
 
 def label_ef_to_images():
@@ -91,7 +133,7 @@ def label_ef_to_images():
         label_one_typhoon(ty)
 
 
-label_ef_to_images()
+# label_ef_to_images()
 
 
 # sst = xarray.open_dataarray('/home/dl/data/TCIE/mcs/sst2000-2019.nc', cache=True) - 273.16

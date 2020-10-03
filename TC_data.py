@@ -8,14 +8,13 @@ from PIL import Image
 
 class TC_Data(Dataset):
     def __init__(self, data_root=args.img_root, years=args.train_years, past_window=args.past_window,
-                 device=args.device):
+                 device=args.device, build_nc_seq=False):
         self.typhoons = self.init_years(data_root, years)
         self.past_window = past_window
         self.device = device
         self.scale = None
         self.efactors, self.images, self.targets, self.ids = self._build_seq_data()
-        # print(self.targets)
-        # print(self.ids)
+        self.build_nc_seq = build_nc_seq
 
     def get_batches(self, batch_size=args.batch_size):
         length = self.efactors.size(0)
@@ -39,8 +38,9 @@ class TC_Data(Dataset):
                 start_idx += 1
             # X_im = X_im.transpose(0, 1)
             X_im = torch.stack(X_im, dim=0).to(self.device)
+            X_ef = torch.stack(X_ef, dim=0).to(self.device)
             Y_int = torch.stack(Y_int, dim=0).to(self.device)
-            yield X_im, Y_int
+            yield X_im,X_ef, Y_int
 
     def init_years(self, data_root, years):
         typhoon_list = []
@@ -64,9 +64,9 @@ class TC_Data(Dataset):
         for idx in range(0, tphns):
             ty = self.typhoons[idx]
             mvts, isi = getOneTyphoon(ty)
-            efactor.append(mvts)
+            efactor.append(mvts[:,0:10])
             images.append(isi)
-            target.append(mvts)
+            target.append(mvts[:,10:])
             plen = mvts.size(0)
             tc_id.append(torch.ones(plen) * idx)
             # lth = len(isi)
@@ -98,7 +98,11 @@ def get_transform():
     return T.Compose(transforms)
 
 
-def getOneTyphoon(dir):
+def getOneTyphoon(dir, build_nc_seq=False):
+    nc_file = None
+    if build_nc_seq:
+        global sst
+        nc_file = sst
     mvts = []
     isi = []
     files = sorted([os.path.join(dir, i) for i in os.listdir(dir)])
@@ -109,26 +113,31 @@ def getOneTyphoon(dir):
         image = channel1[index]
         if image.endswith('jpg'):
             temp = image.split('-')
-            # month = float(temp[0][-4:-2])
-            # jday = d_to_jd(temp[0])
-            # hour = float(temp[1][0:2])
-
-            # lat = float(temp[2])
-            # lon = float(temp[3])
-            # stp=float(temp[4])
-            # centra_sst=float(temp[5])
-            # mpi=cal_MPI_from_SST(centra_sst)
-            # onsea= float(temp[6])
-            # sl_ratio=float(temp[7])
-            # pres = float(temp[-2])
             if str(temp[1]) not in args.time_spot:
                 continue
             ori_intense = float(temp[-1].split('.')[0])
             if ori_intense == 0:
                 continue
-            # pot=mpi-ori_intense
-            # mvts.append([month, jday, hour, lat, lon, stp,centra_sst,mpi,pot,onsea,sl_ratio,pres])
-            mvts.append([ori_intense])
+            # month = float(temp[0][-4:-2])
+            # jday = d_to_jd(temp[0])
+            # hour = float(temp[1][0:2])
+
+            lat = float(temp[2])
+            lon = float(temp[3])
+            stp = float(temp[4])
+            jdate = float(temp[5])
+            centra_sst = float(temp[6])
+            mpi = float(temp[7])
+            rh600 = float(temp[8])
+            t200 = float(temp[9])
+            slr200 = float(temp[10])
+            slr800 = float(temp[11])
+            # pres = float(temp[-2])
+
+            mvts.append([lat, lon - 100, stp, jdate / 10, centra_sst, mpi, rh600, t200 - 273.16, slr200, slr800,ori_intense])
+            # mvts.append([ori_intense])
+            if nc_file is not None:
+                pass
             im1 = Image.open(os.path.join(files[0], image)).convert("L")
             im1 = transform(im1)
             isi.append(im1)
@@ -138,10 +147,12 @@ def getOneTyphoon(dir):
 
 
 if __name__ == '__main__':
-    # mvts, isi=getOneTyphoon('F:/data/TC_IR_IMAGE/2010/201001_OMAIS')
-    # print(isi.size())
+    # mvts, isi = getOneTyphoon('F:/data/TC_IR_IMAGE/2010/201001_OMAIS')
+    # print(isi.shape)
     tc_data = TC_Data(years=[1995])
     for minibatch in tc_data.get_batches():
-        X_im, Y_int = minibatch
-        print(X_im.shape)
-        # print(Y_int)
+        images, efactors, targets  = minibatch
+        targets = targets[:, -1, :]
+        print(images.shape)
+        print(efactors.shape)
+        print(targets.shape)

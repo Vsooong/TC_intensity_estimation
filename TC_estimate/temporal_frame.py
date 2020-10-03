@@ -27,7 +27,7 @@ class ConvRNN(nn.Module):
         return y
 
 
-def get_pretrained_model(load_states=False):
+def get_basline_model(load_states=False):
     encoder = Encoder(convlstm_encoder_params[0], convlstm_encoder_params[1], head_params[0]).to(args.device)
     model = ConvRNN(encoder).to(args.device)
     path = os.path.join(args.save_model, 'convlstm.pth')
@@ -42,7 +42,7 @@ def get_pretrained_model(load_states=False):
 if __name__ == '__main__':
     # (batch size,time step, channel, height, length)
     input = torch.rand(4, 3, 1, 256, 256).to(args.device)
-    model =get_pretrained_model()
+    model =get_basline_model()
 
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)

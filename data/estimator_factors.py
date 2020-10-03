@@ -173,14 +173,15 @@ def label_ef_to_images():
     for ty in typhoons:
         label_one_typhoon(ty)
 
+if __name__ == '__main__':
 
-sst = xarray.open_dataarray('/home/dl/data/TCIE/mcs/sst2000-2019.nc', cache=True) - 273.16
-rh = xarray.open_dataarray('/home/dl/data/TCIE/mcs/rh2000-2019.nc', cache=True)
-tmp = xarray.open_dataarray('/home/dl/data/TCIE/mcs/tmp2000-2019.nc', cache=True)
+    sst = xarray.open_dataarray('/home/dl/data/TCIE/mcs/sst2000-2019.nc', cache=True) - 273.16
+    rh = xarray.open_dataarray('/home/dl/data/TCIE/mcs/rh2000-2019.nc', cache=True)
+    tmp = xarray.open_dataarray('/home/dl/data/TCIE/mcs/tmp2000-2019.nc', cache=True)
 
-# max_lat = max(sst.coords['latitude'].data)
-# min_lon = min(sst.coords['longitude'].data)
-label_ef_to_images()
+    # max_lat = max(sst.coords['latitude'].data)
+    # min_lon = min(sst.coords['longitude'].data)
+    label_ef_to_images()
 
 # start=TM.time()
 # values = select_area_nc(time=10923, clat=20, clon=120, radius1=200, radius2=800, nc_file=sst, max_lat=max_lat,

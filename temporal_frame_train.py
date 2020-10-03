@@ -4,15 +4,20 @@ from utils.Utils import args
 from TC_data import TC_Data
 import os
 import numpy as np
-from TC_estimate.temporal_frame import get_pretrained_model
+from TC_estimate.temporal_frame import get_basline_model
+from TC_estimate.MSFN import get_MSFN_DC
 
 
 def train_one_epoch(model, dataset, optimizer, criterion):
+    global which_model
     model.train()
     loss_epoch = 0
     for minibatch in dataset.get_batches():
-        images, targets = minibatch
-        pred = model(images)
+        images, efactors, targets = minibatch
+        if which_model==1:
+            pred = model(images)
+        elif which_model==2:
+            pred = model(images,efactors)
         optimizer.zero_grad()
         targets = targets[:, -1, :]
         loss = criterion(targets, pred)
@@ -24,6 +29,7 @@ def train_one_epoch(model, dataset, optimizer, criterion):
 
 
 def evaluate(model, dataset):
+    global which_model
     model.eval()
     n_samples = 0
     total_loss1 = 0
@@ -32,10 +38,13 @@ def evaluate(model, dataset):
     predicts = []
 
     for minibatch in dataset.get_batches():
-        images, targets = minibatch
-        pred = model(images)
+        images, efactors, targets = minibatch
+        if which_model == 1:
+            pred = model(images)
+        elif which_model == 2:
+            pred = model(images, efactors)
         targets = targets[:, -1, :]
-        # print(pred.shape,targets.shape)
+
         total_loss1 += evaluateL1(targets, pred).data.item()
         total_loss2 += evaluateL2(targets, pred).data.item()
         n_samples += len(targets)
@@ -47,11 +56,18 @@ def evaluate(model, dataset):
 
 
 def main(train_process=False):
+    global which_model
     device = args.device
-    dataset = TC_Data()
-    dataset_test = TC_Data(years=args.test_years)
-
-    model = get_pretrained_model(load_states=True)
+    dataset = TC_Data(years=[1995])
+    dataset_test = TC_Data(years=[1995])
+    # dataset = TC_Data()
+    # dataset_test = TC_Data(years=args.test_years)
+    if which_model==1:
+        model = get_basline_model(load_states=False)
+        model_name='convlstm.pth'
+    elif which_model==2:
+        model = get_MSFN_DC(load_states=False)
+        model_name = 'MSFN_DC.pth'
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
     params = [p for p in model.parameters() if p.requires_grad]
@@ -71,7 +87,7 @@ def main(train_process=False):
             # lr_scheduler.step()
             if loss_epoch < best_loss:
                 best_loss = loss_epoch
-                path = os.path.join(args.save_model, 'convlstm.pth')
+                path = os.path.join(args.save_model,model_name )
                 torch.save(model.state_dict(), path)
                 print('performance improved, save model to:', path)
 
@@ -81,16 +97,7 @@ def main(train_process=False):
         loss1, loss2, r = evaluate(model, dataset_test)
         print(loss1, loss2, r)
 
-    # for epoch in range(args.epochs):
-    #     # train for one epoch, printing every 10 iterations
-    #     loss_epoch = train_one_epoch(model, optimizer, train_loader, criterion)
-    #     # update the learning rate
-    #     lr_scheduler.step()
-    #     # evaluate on the test dataset
-    #     # evaluate(model, data_loader_test, device=device)
-    #     # torch.save(model.state_dict(), save_path)
-    #     print(loss_epoch)
-
 
 if __name__ == '__main__':
-    main(train_process=False)
+    which_model = 2
+    main(train_process=True)

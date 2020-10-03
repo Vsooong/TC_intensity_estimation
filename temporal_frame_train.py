@@ -56,23 +56,25 @@ def main(train_process=False):
     print('number of parameters: %d' % nParams)
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(params, lr=1e-3)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                   step_size=3,
-                                                   gamma=0.8)
+    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+    #                                                step_size=3,
+    #                                                gamma=0.8)
     criterion = Criterion().to(device)
     best_loss = 9999999
     if train_process == True:
         for epoch in range(args.epochs):
+            if epoch % 3 == 0:
+                loss1, loss2, r = evaluate(model, dataset_test)
+                print("test performance:", loss1, loss2, r)
+
             loss_epoch = train_one_epoch(model, dataset, optimizer, criterion)
-            lr_scheduler.step()
+            # lr_scheduler.step()
             if loss_epoch < best_loss:
                 best_loss = loss_epoch
                 path = os.path.join(args.save_model, 'convlstm.pth')
                 torch.save(model.state_dict(), path)
                 print('performance improved, save model to:', path)
-            if epoch % 3 == 0:
-                loss1, loss2, r = evaluate(model, dataset_test)
-                print("test performance:", loss1, loss2, r)
+
             print('Epoch:', epoch, loss_epoch)
         print('training finish ')
     else:
@@ -91,4 +93,4 @@ def main(train_process=False):
 
 
 if __name__ == '__main__':
-    main(train_process=True)
+    main(train_process=False)

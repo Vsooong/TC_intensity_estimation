@@ -9,6 +9,7 @@ from TC_estimate.MSFN_DC import get_MSFN_DC
 from TC_estimate.MSFN_GF import get_MSFN_GF
 from TC_estimate.MSFN import get_MSFN
 
+
 def train_one_epoch(model, dataset, optimizer, criterion):
     global which_model
     model.train()
@@ -17,9 +18,7 @@ def train_one_epoch(model, dataset, optimizer, criterion):
         images, efactors, targets = minibatch
         if which_model == 1:
             pred = model(images)
-        elif which_model == 2:
-            pred = model(images, efactors)
-        elif which_model == 3:
+        else:
             pred = model(images, efactors)
         optimizer.zero_grad()
         targets = targets[:, -1, :]
@@ -44,12 +43,8 @@ def evaluate(model, dataset):
         images, efactors, targets = minibatch
         if which_model == 1:
             pred = model(images)
-        elif which_model == 2:
-            pred = model(images, efactors)
-        elif which_model == 3:
-            pred = model(images, efactors)
         else:
-            return
+            pred = model(images, efactors)
         if np.isnan(pred.data.cpu()).sum() != 0:
             print(efactors)
             print(targets)
@@ -112,6 +107,7 @@ def main(train_process=False, load_states=False):
                 print('performance improved, save model to:', path)
 
             print('Epoch:', epoch, loss_epoch)
+            print('----------------------------------------------')
         print('training finish ')
     else:
         loss1, loss2, r = evaluate(model, dataset_test)

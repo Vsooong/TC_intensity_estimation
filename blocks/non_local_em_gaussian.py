@@ -67,6 +67,8 @@ class _NonLocalBlockND(nn.Module):
             self.g = nn.Sequential(self.g, max_pool_layer)
             self.phi = nn.Sequential(self.phi, max_pool_layer)
 
+        self.scale = nn.Parameter(torch.tensor(0.0))
+
     def forward(self, x, return_nl_map=False):
         """
         :param x: (b, c, t, h, w)
@@ -89,7 +91,7 @@ class _NonLocalBlockND(nn.Module):
         y = y.permute(0, 2, 1).contiguous()
         y = y.view(batch_size, self.inter_channels, *x.size()[2:])
         W_y = self.W(y)
-        z = W_y + x
+        z = self.scale * W_y + x
 
         if return_nl_map:
             return z, f_div_C
@@ -122,6 +124,7 @@ class NONLocalBlock3D(_NonLocalBlockND):
 
 if __name__ == '__main__':
     import torch
+
     # :param
     # x: (b, c, t, h, w)
 

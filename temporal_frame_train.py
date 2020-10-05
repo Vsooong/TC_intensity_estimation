@@ -6,6 +6,7 @@ import os
 import numpy as np
 from TC_estimate.temporal_frame import get_basline_model
 from TC_estimate.MSFN_DC import get_MSFN_DC
+from TC_estimate.MSFN_GF import get_MSFN_GF
 
 
 def train_one_epoch(model, dataset, optimizer, criterion):
@@ -17,6 +18,8 @@ def train_one_epoch(model, dataset, optimizer, criterion):
         if which_model == 1:
             pred = model(images)
         elif which_model == 2:
+            pred = model(images, efactors)
+        elif which_model == 3:
             pred = model(images, efactors)
         optimizer.zero_grad()
         targets = targets[:, -1, :]
@@ -42,6 +45,8 @@ def evaluate(model, dataset):
         if which_model == 1:
             pred = model(images)
         elif which_model == 2:
+            pred = model(images, efactors)
+        elif which_model == 3:
             pred = model(images, efactors)
         else:
             return
@@ -76,6 +81,9 @@ def main(train_process=False, load_states=False):
     elif which_model == 2:
         model = get_MSFN_DC(load_states=load_states)
         model_name = 'MSFN_DC.pth'
+    elif which_model == 3:
+        model = get_MSFN_GF(load_states=load_states)
+        model_name = 'MSFN_GF.pth'
     else:
         pass
     nParams = sum([p.nelement() for p in model.parameters()])
@@ -110,5 +118,5 @@ def main(train_process=False, load_states=False):
 
 
 if __name__ == '__main__':
-    which_model = 2
+    which_model = 3
     main(train_process=True, load_states=False)

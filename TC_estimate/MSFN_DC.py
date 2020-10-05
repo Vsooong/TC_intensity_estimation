@@ -32,8 +32,10 @@ class MSFN_DC(nn.Module):
         self.projector = nn.Sequential(
             nn.Linear(n_features, n_hidden, bias=False),
             nn.LeakyReLU(),
+            nn.Dropout(0.4),
             nn.Linear(n_hidden, n_hidden, bias=False),
             nn.LeakyReLU(),
+            nn.Dropout(0.4),
             nn.Linear(n_hidden, 1, bias=True),
             nn.LeakyReLU(),
         )

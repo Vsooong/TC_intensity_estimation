@@ -5,23 +5,8 @@ from blocks.encoder import Encoder
 from blocks.net_params import encoder_params, convlstm_encoder_params, head_params
 import os
 import torch.nn.functional as F
-
-
-class EF_LSTM(nn.Module):
-    def __init__(self, input_dim=10, hidden_dim=64, out_dim=256):
-        super(EF_LSTM, self).__init__()
-        self.lstm1 = nn.LSTM(input_dim, hidden_dim)
-        self.lstm2 = nn.LSTM(hidden_dim, out_dim)
-
-    def forward(self, x):
-        output, (h, c) = self.lstm1(x)
-        output, (h, c) = self.lstm2(output)
-        return output
-class Gated_Fusion_Memory(nn.Module):
-    def __init__(self, input_dim=10, hidden_dim=64):
-        super(Gated_Fusion_Memory, self).__init__()
-        self.lstm1 = nn.LSTM(input_dim, hidden_dim)
-        self.lstm2 = nn.LSTM(hidden_dim, out_dim)
+from TC_estimate.MSFN_DC import EF_LSTM
+import time
 
 
 class MSFN_GF(nn.Module):
@@ -29,29 +14,28 @@ class MSFN_GF(nn.Module):
         super(MSFN_GF, self).__init__()
         self.encoder1 = encoder1
         self.encoder2 = encoder2
-        if encoder2 is not None:
-            n_features += args.hidden_dim
-        self.encoder3 = encoder3
-        if encoder3 is not None:
-            n_features += args.hidden_dim
+        self.pool1=nn.AdaptiveAvgPool2d(output_size=(1,1))
         self.projector = nn.Sequential(
-            nn.Linear(n_features, n_hidden, bias=False),
-            nn.LeakyReLU(),
             nn.Linear(n_hidden, n_hidden, bias=False),
             nn.LeakyReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(n_hidden, n_hidden, bias=False),
+            nn.LeakyReLU(),
+            nn.Dropout(0.4),
             nn.Linear(n_hidden, 1, bias=True),
             nn.LeakyReLU(),
         )
 
-    def forward(self, x_1, x_2=None, x_3=None):
+    def forward(self, x_1, x_2, x_3=None):
         x_1 = x_1.transpose(0, 1).contiguous()
         state, output_1 = self.encoder1(x_1)
-        out = output_1[-1]
-        if x_2 is not None:
-            x_2 = x_2.transpose(0, 1).contiguous()
-            output_2 = self.encoder2(x_2)
-            out_2 = output_2[-1]
-            out=torch.cat([out,out_2],dim=1)
+        out = output_1.permute(1,2,0).contiguous()
+
+        x_2 = x_2.transpose(0, 1).contiguous()
+        output_2 = self.encoder2(x_2)
+        out_2 = output_2.permute(1,2,0).contiguous()
+        out = torch.stack([out, out_2], dim=3)
+        out=self.pool1(out).squeeze()
 
         y = self.projector(out)
         return y
@@ -61,7 +45,7 @@ def get_MSFN_GF(load_states=False):
     encoder = Encoder(convlstm_encoder_params[0], convlstm_encoder_params[1], head_params[0]).to(args.device)
     ef_encoder = EF_LSTM()
     model = MSFN_GF(encoder, ef_encoder, None).to(args.device)
-    path = os.path.join(args.save_model, 'MSFN_DC.pth')
+    path = os.path.join(args.save_model, 'MSFN_GF.pth')
     if load_states and os.path.exists(path):
         model.load_state_dict(torch.load(path, map_location=args.device))
         print('load temporal model from:', path)
@@ -78,5 +62,13 @@ if __name__ == '__main__':
     model = get_MSFN_GF()
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
+    start=time.time()
     output = model(input1, input2)
+    end = time.time()
+    print(end-start)
     print(output.shape)
+
+    # m = nn.AdaptiveAvgPool2d((5, 7))
+    # input = torch.randn(1, 64, 8, 9)
+    # output = m(input)
+    # print(output.shape)

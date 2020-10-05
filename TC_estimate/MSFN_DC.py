@@ -20,7 +20,7 @@ class EF_LSTM(nn.Module):
 
 
 class MSFN_DC(nn.Module):
-    def __init__(self, encoder1, encoder2=None, encoder3=None, n_features=args.hidden_dim, n_hidden=args.hidden_dim):
+    def __init__(self, encoder1, encoder2, encoder3, n_features=args.hidden_dim, n_hidden=args.hidden_dim):
         super(MSFN_DC, self).__init__()
         self.encoder1 = encoder1
         self.encoder2 = encoder2

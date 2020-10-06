@@ -8,27 +8,33 @@ import numpy as np
 from datetime import date
 import xarray
 import time as TM
+import matplotlib.pyplot as plt
+
+Sea_Surface_Temperature = None
 
 
 class TC_Data(Dataset):
     def __init__(self, data_root=args.img_root, years=args.train_years, past_window=args.past_window,
-                 device=args.device, build_nc_seq=False):
+                 device=args.device):
         self.typhoons = self.init_years(data_root, years)
         self.past_window = past_window
         self.device = device
-        self.scale = None
-        self.efactors, self.images, self.targets, self.ids = self._build_seq_data()
-        self.build_nc_seq = build_nc_seq
+        global Sea_Surface_Temperature
+        if Sea_Surface_Temperature is None:
+            Sea_Surface_Temperature = xarray.open_dataarray(args.sea_surface_temperature, cache=True)
+
+        self.efactors, self.images, self.env_sst, self.targets, self.ids = self._build_seq_data()
 
     def get_batches(self, batch_size=args.batch_size):
         length = self.efactors.size(0)
         start_idx = 0
         index = torch.as_tensor(range(length), device=self.device, dtype=torch.long)
-        assert length == len(self.ids)
+        assert length == self.ids.size(0)
 
         while start_idx <= length - self.past_window + 1:
             X_ef = []
             X_im = []
+            X_sst = []
             Y_int = []
             # piece_len = batch_size - 1 + self.past_window
             # end_idx = min(length, start_idx + piece_len)
@@ -38,13 +44,15 @@ class TC_Data(Dataset):
                     excerpt = index[start_idx:(start_idx + self.past_window)]
                     X_ef.append(torch.as_tensor(self.efactors[excerpt]).to(self.device))
                     X_im.append(torch.as_tensor(self.images[excerpt]).to(self.device))
+                    X_sst.append(torch.as_tensor(self.env_sst[excerpt]).to(self.device))
                     Y_int.append(torch.as_tensor(self.targets[excerpt]).to(self.device))
                 start_idx += 1
             # X_im = X_im.transpose(0, 1)
-            X_im = torch.stack(X_im, dim=0).to(self.device)
             X_ef = torch.stack(X_ef, dim=0).to(self.device)
+            X_im = torch.stack(X_im, dim=0).to(self.device)
+            X_sst = torch.stack(X_sst, dim=0).to(self.device)
             Y_int = torch.stack(Y_int, dim=0).to(self.device)
-            yield X_im, X_ef, Y_int
+            yield X_im, X_ef, X_sst, Y_int
 
     def init_years(self, data_root, years):
         typhoon_list = []
@@ -62,14 +70,16 @@ class TC_Data(Dataset):
         tphns = len(self.typhoons)
         efactor = []
         images = []
+        env_sst = []
         target = []
         tc_id = []
 
         for idx in range(0, tphns):
             ty = self.typhoons[idx]
-            mvts, isi = getOneTyphoon(ty)
+            mvts, isi, ssts = getOneTyphoon(ty, True)
             efactor.append(mvts[:, 0:10])
             images.append(isi)
+            env_sst.append(ssts)
             target.append(mvts[:, 10:])
             plen = mvts.size(0)
             tc_id.append(torch.ones(plen) * idx)
@@ -84,15 +94,16 @@ class TC_Data(Dataset):
 
         efactors = torch.cat(efactor, dim=0)
         infr_img = torch.cat(images, dim=0)
+        env_sst = torch.cat(env_sst, dim=0)
         labels = torch.cat(target, dim=0)
         ids = torch.cat(tc_id, dim=0)
-        return efactors, infr_img, labels, ids
+        return efactors, infr_img, env_sst, labels, ids
 
     def __len__(self):
         return self.efactors.size(0)
 
     def __getitem__(self, idx):
-        return self.ef[idx], self.images[idx], self.target[idx]
+        return self.efactors[idx], self.images[idx], self.env_sst[idx], self.targets[idx]
 
 
 def get_transform():
@@ -110,17 +121,19 @@ def day_diff(date):
     delta = date - start_date
     return delta.days
 
-def relative_coord(l_lat1,l_lon1,l_lat2,l_lon2,r_lat1=0,r_lon1=100,r_lat2=50,r_lon2=180,resl=4):
-    ovlat1=max(l_lat1,r_lat1)
-    ovlat2=min(l_lat2,r_lat2)
-    ovlon1=max(l_lon1,r_lon1)
-    ovlon2=min(l_lon2,r_lon2)
 
-    rows1=(r_lat2-ovlat2)*resl
-    rows2=(r_lat2-ovlat1)*resl
-    cols1=(ovlon1-r_lon1)*resl
-    cols2=(ovlon2-r_lon1)*resl
-    return rows1,rows2,cols1,cols2
+def relative_coord(l_lat1, l_lon1, l_lat2, l_lon2, r_lat1=0, r_lon1=100, r_lat2=50, r_lon2=180, resl=4):
+    ovlat1 = max(l_lat1, r_lat1)
+    ovlat2 = min(l_lat2, r_lat2)
+    ovlon1 = max(l_lon1, r_lon1)
+    ovlon2 = min(l_lon2, r_lon2)
+
+    rows1 = (r_lat2 - ovlat2) * resl
+    rows2 = (r_lat2 - ovlat1) * resl
+    cols1 = (ovlon1 - r_lon1) * resl
+    cols2 = (ovlon2 - r_lon1) * resl
+    return int(rows1), int(rows2), int(cols1), int(cols2)
+
 
 def get_sst(file_path='F:/data/msc/sst2000-2019.nc'):
     sst = xarray.open_dataarray(file_path, cache=False)
@@ -132,6 +145,7 @@ def getOneTyphoon(dir, build_nc_seq=False):
     global Sea_Surface_Temperature
     mvts = []
     isi = []
+    ssts = []
     files = sorted([os.path.join(dir, i) for i in os.listdir(dir)])
     channel1 = sorted(os.listdir(files[0]))
     transform = get_transform()
@@ -174,40 +188,51 @@ def getOneTyphoon(dir, build_nc_seq=False):
             # mvts.append([ori_intense])
             # if np.isnan(record).sum() != 0: print()
             if build_nc_seq:
-                sst_back = torch.zeros(size=(args.sst_size, args.sst_size))
+                sst_background = np.zeros(shape=(args.sst_size, args.sst_size))
                 cen_lat = int(lat)
                 cen_lon = int(lon)
-                lon1 = int(cen_lon - args.sst_size / 2 + 1)
-                lon2 = int(cen_lon + args.sst_size / 2)
-                lat1 = int(cen_lat - args.sst_size / 2 + 1)
-                lat2 = int(cen_lat + args.sst_size / 2)
-                rows1, rows2, cols1, cols2=relative_coord(lat1,lon1,lat2,lon2)
-                rows1, rows2, cols1, cols2=relative_coord(0,100,50,180,lat1,lon1,lat2,lon2)
+                lon1 = cen_lon - args.sst_size / 8 + 0.25
+                lon2 = cen_lon + args.sst_size / 8
+                lat1 = cen_lat - args.sst_size / 8 + 0.25
+                lat2 = cen_lat + args.sst_size / 8
+                rows1, rows2, cols1, cols2 = relative_coord(lat1, lon1, lat2, lon2)
+                sst = Sea_Surface_Temperature[time, rows1:rows2 + 1, cols1:cols2 + 1]
+                rows1, rows2, cols1, cols2 = relative_coord(0, 100, 50, 180, lat1, lon1, lat2, lon2)
+                sst_background[rows1:rows2 + 1, cols1:cols2 + 1] = sst.data - 273.16
+                sst_background[np.isnan(sst_background)] = 0
+                ssts.append(torch.as_tensor(sst_background))
+                # sst.plot()
+                # plt.show()
+                # print(sst_background.shape)
+                # print(lat1, lon1, lat2, lon2)
+                # print(sst.coords)
 
             im1 = Image.open(os.path.join(files[0], image)).convert("L")
             im1 = transform(im1)
             isi.append(im1)
     mvts = torch.tensor(mvts)
     isi = torch.stack(isi, dim=0)
-    return mvts, isi
+    ssts = torch.stack(ssts, dim=0)
+    return mvts, isi, ssts
 
 
 if __name__ == '__main__':
     # file_path = 'F:/data/msc/sst2000-2019.nc'
-    # Sea_Surface_Temperature = xarray.open_dataarray(file_path, cache=False)
-    # print(Sea_Surface_Temperature)
-    print(relative_coord(-10,90,40,150))
-    start = TM.time()
-    # mvts, isi = getOneTyphoon('F:/data/TC_IR_IMAGE/2010/201001_OMAIS')
-    # print(isi.shape)
-    end=TM.time()
-    print(end-start)
+    Sea_Surface_Temperature = xarray.open_dataarray('/home/dl/data/TCIE/mcs/sst2000-2019.nc', cache=True)
+    # start = TM.time()
+    # for i in range(10):
+    # mvts, isi, sst = getOneTyphoon('/home/dl/data/TCIE/TC_IR_IMAGE/2019/201929_PHANFONE', build_nc_seq=True)
+    # end = TM.time()
+    # print(end - start)
 
-    # tc_data = TC_Data(years=[1995])
-    # for minibatch in tc_data.get_batches():
-    #     images, efactors, targets = minibatch
-    #     targets = targets[:, -1, :]
-    #     print(images.shape)
+    tc_data = TC_Data(years=[2000])
+    print(tc_data.env_sst.shape)
+
+    for minibatch in tc_data.get_batches():
+        images, efactors, envsst, targets = minibatch
+        #     targets = targets[:, -1, :]
+        print(envsst.shape)
+        print(efactors.shape)
     #     print(efactors.shape)
     #     print(targets.shape)
 

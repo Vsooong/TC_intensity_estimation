@@ -15,11 +15,11 @@ def train_one_epoch(model, dataset, optimizer, criterion):
     model.train()
     loss_epoch = 0
     for minibatch in dataset.get_batches():
-        images, efactors, targets = minibatch
+        images, efactors, envsst, targets = minibatch
         if which_model == 1:
             pred = model(images)
         else:
-            pred = model(images, efactors)
+            pred = model(images, efactors, envsst)
         optimizer.zero_grad()
         targets = targets[:, -1, :]
         loss = criterion(targets, pred)

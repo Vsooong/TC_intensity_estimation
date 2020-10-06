@@ -20,8 +20,8 @@ weight_decay: 1.0e-6 # "optimized using LARS [...] and weight decay of 10−6"
 img_scale_factor: 2
 img_root_dir: ["F:/data/TC_IR_IMAGE/","/home/dl/data/TCIE/TC_IR_IMAGE"]
 hidden_dim: 256
-img_height: 256
-img_width: 256
+img_size: 256
+sst_size: 58
 past_window: 3
 stride: 1
 dropout: 0.4

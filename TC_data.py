@@ -5,6 +5,9 @@ import torchvision.transforms as T
 import os
 from PIL import Image
 import numpy as np
+from datetime import date
+import xarray
+import time as TM
 
 
 class TC_Data(Dataset):
@@ -94,16 +97,39 @@ class TC_Data(Dataset):
 
 def get_transform():
     transforms = list()
-    transforms.append(T.Resize((args.img_height, args.img_width)))
+    transforms.append(T.Resize((args.img_size, args.img_size)))
     transforms.append(T.ToTensor())
     return T.Compose(transforms)
 
 
+start_date = date(2000, 1, 1)
+
+
+def day_diff(date):
+    global start_date
+    delta = date - start_date
+    return delta.days
+
+def relative_coord(l_lat1,l_lon1,l_lat2,l_lon2,r_lat1=0,r_lon1=100,r_lat2=50,r_lon2=180,resl=4):
+    ovlat1=max(l_lat1,r_lat1)
+    ovlat2=min(l_lat2,r_lat2)
+    ovlon1=max(l_lon1,r_lon1)
+    ovlon2=min(l_lon2,r_lon2)
+
+    rows1=(r_lat2-ovlat2)*resl
+    rows2=(r_lat2-ovlat1)*resl
+    cols1=(ovlon1-r_lon1)*resl
+    cols2=(ovlon2-r_lon1)*resl
+    return rows1,rows2,cols1,cols2
+
+def get_sst(file_path='F:/data/msc/sst2000-2019.nc'):
+    sst = xarray.open_dataarray(file_path, cache=False)
+    # - 273.16
+    return sst
+
+
 def getOneTyphoon(dir, build_nc_seq=False):
-    nc_file = None
-    if build_nc_seq:
-        global sst
-        nc_file = sst
+    global Sea_Surface_Temperature
     mvts = []
     isi = []
     files = sorted([os.path.join(dir, i) for i in os.listdir(dir)])
@@ -119,9 +145,10 @@ def getOneTyphoon(dir, build_nc_seq=False):
             ori_intense = float(temp[-1].split('.')[0])
             if ori_intense == 0:
                 continue
-            # month = float(temp[0][-4:-2])
-            # jday = d_to_jd(temp[0])
-            # hour = float(temp[1][0:2])
+            cdate = temp[0]
+            hour = temp[1]
+            time = date(int(cdate[:4]), int(cdate[4:6]), int(cdate[6:8]))
+            time = day_diff(time) * 8 + int(int(hour[0:2]) / 3)
 
             lat = float(temp[2])
             lon = float(temp[3])
@@ -146,8 +173,17 @@ def getOneTyphoon(dir, build_nc_seq=False):
             mvts.append(record)
             # mvts.append([ori_intense])
             # if np.isnan(record).sum() != 0: print()
-            if nc_file is not None:
-                pass
+            if build_nc_seq:
+                sst_back = torch.zeros(size=(args.sst_size, args.sst_size))
+                cen_lat = int(lat)
+                cen_lon = int(lon)
+                lon1 = int(cen_lon - args.sst_size / 2 + 1)
+                lon2 = int(cen_lon + args.sst_size / 2)
+                lat1 = int(cen_lat - args.sst_size / 2 + 1)
+                lat2 = int(cen_lat + args.sst_size / 2)
+                rows1, rows2, cols1, cols2=relative_coord(lat1,lon1,lat2,lon2)
+                rows1, rows2, cols1, cols2=relative_coord(0,100,50,180,lat1,lon1,lat2,lon2)
+
             im1 = Image.open(os.path.join(files[0], image)).convert("L")
             im1 = transform(im1)
             isi.append(im1)
@@ -157,9 +193,15 @@ def getOneTyphoon(dir, build_nc_seq=False):
 
 
 if __name__ == '__main__':
-    pass
+    # file_path = 'F:/data/msc/sst2000-2019.nc'
+    # Sea_Surface_Temperature = xarray.open_dataarray(file_path, cache=False)
+    # print(Sea_Surface_Temperature)
+    print(relative_coord(-10,90,40,150))
+    start = TM.time()
     # mvts, isi = getOneTyphoon('F:/data/TC_IR_IMAGE/2010/201001_OMAIS')
     # print(isi.shape)
+    end=TM.time()
+    print(end-start)
 
     # tc_data = TC_Data(years=[1995])
     # for minibatch in tc_data.get_batches():

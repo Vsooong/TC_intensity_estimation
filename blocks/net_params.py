@@ -41,7 +41,6 @@ encoder_params = [
     ]
 ]
 
-
 forecaster_params = [
     [
         OrderedDict({'deconv1_leaky_1': [128, 32, 4, 2, 0]}),
@@ -70,7 +69,6 @@ forecaster_params = [
     ]
 ]
 
-
 # build model
 convlstm_encoder_params = [
     [
@@ -83,6 +81,22 @@ convlstm_encoder_params = [
         ConvLSTM(input_channel=8, num_filter=8, b_h_w=(50, 50),
                  kernel_size=3, stride=1, padding=1),
         ConvLSTM(input_channel=32, num_filter=32, b_h_w=(16, 16),
+                 kernel_size=3, stride=1, padding=1),
+        ConvLSTM(input_channel=128, num_filter=128, b_h_w=(7, 7),
+                 kernel_size=3, stride=1, padding=1),
+    ]
+]
+
+sst_encoder_params = [
+    [
+        OrderedDict({'conv1_leaky_1': [1, 8, 3, 2, 1]}),
+        OrderedDict({'conv2_leaky_1': [8, 32, 3, 2, 1]}),
+        OrderedDict({'conv3_leaky_1': [32, 128, 3, 2, 0]}),
+    ],
+    [
+        ConvLSTM(input_channel=8, num_filter=8, b_h_w=(30, 30),
+                 kernel_size=3, stride=1, padding=1),
+        ConvLSTM(input_channel=32, num_filter=32, b_h_w=(15, 15),
                  kernel_size=3, stride=1, padding=1),
         ConvLSTM(input_channel=128, num_filter=128, b_h_w=(7, 7),
                  kernel_size=3, stride=1, padding=1),
@@ -110,7 +124,6 @@ convlstm_forecaster_params = [
     ]
 ]
 
-
 conv2d_params = OrderedDict({
     'conv1_relu_1': [5, 64, 7, 5, 1],
     'conv2_relu_1': [64, 192, 5, 3, 1],
@@ -130,5 +143,5 @@ head_params = [
     ])
 ]
 if __name__ == '__main__':
-    size = tensor_size_after_conv(7, 7, 3, 1,0)
+    size = tensor_size_after_conv(15, 15, 3, 2, 0)
     print(size)

@@ -4,8 +4,7 @@ from utils.util_layer import make_layers
 from utils.Utils import args
 import logging
 import torch.nn.functional as F
-from blocks.net_params import encoder_params, forecaster_params, convlstm_encoder_params, \
-    convlstm_forecaster_params, head_params
+from blocks.net_params import  convlstm_encoder_params, head_params,sst_encoder_params
 
 
 class Encoder(nn.Module):
@@ -51,8 +50,8 @@ class Encoder(nn.Module):
 
 if __name__ == '__main__':
     # (time step,batch size, channel, height, length)
-    input = torch.rand(3, 4, 1, 256, 256).to(args.device)
-    model = Encoder(convlstm_encoder_params[0], convlstm_encoder_params[1], head_params[0]).to(args.device)
+    input = torch.rand(3, 4, 1, 60, 60).to(args.device)
+    model = Encoder(sst_encoder_params[0], sst_encoder_params[1], head_params[0]).to(args.device)
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
     state, output = model(input)

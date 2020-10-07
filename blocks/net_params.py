@@ -138,7 +138,7 @@ conv2d_params = OrderedDict({
 head_params = [
     OrderedDict([
         ('maxpool1', nn.MaxPool2d(2, 2)),
-        ('conv1', nn.Conv2d(128, 256, 3, 1)),
+        ('conv1', nn.Conv2d(128, 128, 3, 1)),
 
     ])
 ]

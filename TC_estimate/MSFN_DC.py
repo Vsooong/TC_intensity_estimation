@@ -8,10 +8,10 @@ import torch.nn.functional as F
 
 
 class EF_LSTM(nn.Module):
-    def __init__(self, input_dim=10, hidden_dim=64, out_dim=256):
+    def __init__(self, input_dim=10, hidden_dim=args.hidden_dim):
         super(EF_LSTM, self).__init__()
         self.lstm1 = nn.LSTM(input_dim, hidden_dim)
-        self.lstm2 = nn.LSTM(hidden_dim, out_dim)
+        self.lstm2 = nn.LSTM(hidden_dim, hidden_dim)
 
     def forward(self, x):
         output, (h, c) = self.lstm1(x)

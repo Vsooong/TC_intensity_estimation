@@ -59,7 +59,7 @@ def get_config():
     for dirs in args.model_save1:
         if os.path.exists(dirs):
             args.save_model = dirs
-    args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    args.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     args.num_gpus = torch.cuda.device_count()
     args.world_size = args.gpus * args.nodes
     args.rnn_act = activation('leaky', negative_slope=0.2, inplace=True)

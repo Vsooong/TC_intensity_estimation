@@ -200,7 +200,7 @@ def getOneTyphoon(dir, build_nc_seq=False):
                 rows1, rows2, cols1, cols2 = relative_coord(0, 100, 50, 180, lat1, lon1, lat2, lon2)
                 sst_background[rows1:rows2 + 1, cols1:cols2 + 1] = sst.data - 273.16
                 sst_background[np.isnan(sst_background)] = 0
-                sst_record = torch.as_tensor(sst_background).unsqueeze(0)
+                sst_record = torch.as_tensor(sst_background, dtype=torch.float).unsqueeze(0)
                 ssts.append(sst_record)
                 # sst.plot()
                 # plt.show()

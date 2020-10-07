@@ -40,11 +40,11 @@ def evaluate(model, dataset):
     predicts = []
 
     for minibatch in dataset.get_batches():
-        images, efactors, targets = minibatch
+        images, efactors, envsst, targets = minibatch
         if which_model == 1:
             pred = model(images)
         else:
-            pred = model(images, efactors)
+            pred = model(images, efactors, envsst)
         if np.isnan(pred.data.cpu()).sum() != 0:
             print(efactors)
             print(targets)
@@ -64,12 +64,7 @@ def evaluate(model, dataset):
 def main(train_process=False, load_states=False):
     global which_model
     device = args.device
-    # dataset = TC_Data(years=[2006])
-    # dataset_test = TC_Data(years=[2006])
-    dataset = TC_Data()
-    dataset_test = TC_Data(years=args.test_years)
-    print('Training samples:', len(dataset.targets))
-    print('Test samples:', len(dataset_test.targets))
+
     if which_model == 1:
         model = get_basline_model(load_states=load_states)
         model_name = 'convlstm.pth'
@@ -82,8 +77,15 @@ def main(train_process=False, load_states=False):
     else:
         model = get_MSFN(load_states=load_states)
         model_name = 'MSFN.pth'
+    print('use model:', model_name)
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
+    # dataset = TC_Data(years=[2006])
+    # dataset_test = TC_Data(years=[2006])
+    dataset = TC_Data()
+    dataset_test = TC_Data(years=args.test_years)
+    print('Training samples:', len(dataset.targets))
+    print('Test samples:', len(dataset_test.targets))
     print('------------------------------------------\n')
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(params, lr=0.001)
@@ -115,5 +117,5 @@ def main(train_process=False, load_states=False):
 
 
 if __name__ == '__main__':
-    which_model = 4
+    which_model = 2
     main(train_process=True, load_states=False)

@@ -141,8 +141,10 @@ def get_sst(file_path='F:/data/msc/sst2000-2019.nc'):
     return sst
 
 
-def getOneTyphoon(dir, build_nc_seq=False):
-    global Sea_Surface_Temperature
+def getOneTyphoon(dir, build_nc_seq=False,SST=None):
+    if SST is None:
+        global Sea_Surface_Temperature
+        SST=Sea_Surface_Temperature
     mvts = []
     isi = []
     ssts = []
@@ -196,7 +198,7 @@ def getOneTyphoon(dir, build_nc_seq=False):
                 lat1 = cen_lat - args.sst_size / 8 + 0.25
                 lat2 = cen_lat + args.sst_size / 8
                 rows1, rows2, cols1, cols2 = relative_coord(lat1, lon1, lat2, lon2)
-                sst = Sea_Surface_Temperature[time, rows1:rows2 + 1, cols1:cols2 + 1]
+                sst = SST[time, rows1:rows2 + 1, cols1:cols2 + 1]
                 rows1, rows2, cols1, cols2 = relative_coord(0, 100, 50, 180, lat1, lon1, lat2, lon2)
                 sst_background[rows1:rows2 + 1, cols1:cols2 + 1] = sst.data - 273.16
                 sst_background[np.isnan(sst_background)] = 0

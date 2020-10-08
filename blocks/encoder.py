@@ -18,7 +18,7 @@ class Encoder(nn.Module):
         for index, (params, rnn) in enumerate(zip(subnets, rnns), 1):
             setattr(self, 'stage' + str(index), make_layers(params))
             setattr(self, 'rnn' + str(index), rnn)
-        self.last_no_local3D = NONLocalBlock3D(args.hidden_dim)
+        # self.last_no_local3D = NONLocalBlock3D(args.hidden_dim)
         self.head = nn.Sequential(head)
 
     def forward_by_stage(self, input, subnet, rnn):
@@ -44,9 +44,9 @@ class Encoder(nn.Module):
 
         seq_number, batch_size, input_channel, height, width = input.size()
         # (b, c, t, h, w)
-        input = input.permute(1, 2, 0, 3, 4).contiguous()
-        input = self.last_no_local3D(input)
-        input = input.permute(2, 0, 1, 3, 4).contiguous()
+        # input = input.permute(1, 2, 0, 3, 4).contiguous()
+        # input = self.last_no_local3D(input)
+        # input = input.permute(2, 0, 1, 3, 4).contiguous()
         input = torch.reshape(input, (-1, input_channel, height, width))
         input = F.leaky_relu(self.head(input))
 

@@ -30,7 +30,7 @@ class MSFN(nn.Module):
             nn.LeakyReLU(),
         )
 
-    def forward(self, x_1, x_2, x_3=None):
+    def forward(self, x_1, x_2, x_3=None, return_nl_map=False):
         x_1 = x_1.transpose(0, 1).contiguous()
         state, output_1 = self.encoder1(x_1)
         out = output_1.permute(1, 2, 0).contiguous()
@@ -45,11 +45,17 @@ class MSFN(nn.Module):
             out = torch.stack([out, out_2, out_3], dim=3)
         else:
             out = torch.stack([out, out_2], dim=3)
-        out, f_div_C, W_y = self.no_local(out, return_nl_map=True)
-        out = self.pool1(out).squeeze()
+        if return_nl_map is True:
+            out, f_div_C, W_y = self.no_local(out, return_nl_map=True)
+            out = self.pool1(out).squeeze()
+            y = self.projector(out)
+            return y, f_div_C, W_y
 
-        y = self.projector(out)
-        return y
+        else:
+            out = self.no_local(out, return_nl_map=False)
+            out = self.pool1(out).squeeze()
+            y = self.projector(out)
+            return y
 
 
 def get_MSFN(load_states=False):

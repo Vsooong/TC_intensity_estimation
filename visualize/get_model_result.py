@@ -69,12 +69,12 @@ def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR'):
 
 def estimate_one_ty(X_im, X_ef, X_sst, model):
     model.eval()
-    pred = model(X_im, X_ef, X_sst)
-    print(pred.shape)
+    pred, f_div_C, W_y = model(X_im, X_ef, X_sst, return_nl_map=True)
+    return pred, f_div_C, W_y
 
 
 def get_model():
-    model = get_MSFN(load_states=True)
+    model = get_MSFN(load_states=False)
     model_name = 'MSFN.pth'
     print('use model:', model_name)
     nParams = sum([p.nelement() for p in model.parameters()])
@@ -93,7 +93,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
-    # X_im, X_ef, X_sst, target = build_one_ty()
-    # model = get_model()
-    # estimate_one_ty(X_im, X_ef, X_sst, model)
+    # main()
+    X_im, X_ef, X_sst, target = build_one_ty()
+    model = get_model()
+    pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+    print(pred.shape,f_div_C.shape,W_y.shape)

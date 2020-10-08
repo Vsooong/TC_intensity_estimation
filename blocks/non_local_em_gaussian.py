@@ -86,15 +86,17 @@ class _NonLocalBlockND(nn.Module):
         phi_x = self.phi(x).view(batch_size, self.inter_channels, -1)
         f = torch.matmul(theta_x, phi_x)
         f_div_C = F.softmax(f, dim=-1)
-
+        # print(f_div_C.shape)
         y = torch.matmul(f_div_C, g_x)
         y = y.permute(0, 2, 1).contiguous()
         y = y.view(batch_size, self.inter_channels, *x.size()[2:])
         W_y = self.W(y)
+        # print(W_y.shape)
+
         z = W_y + x
 
         if return_nl_map:
-            return z, f_div_C
+            return z, f_div_C, W_y
         return z
 
 
@@ -128,20 +130,25 @@ if __name__ == '__main__':
     # :param
     # x: (b, c, t, h, w)
 
-    for (sub_sample_, bn_layer_) in [(True, True), (False, False), (True, False), (False, True)]:
-        # img = torch.zeros(2, 3, 20)
-        # net = NONLocalBlock1D(3, sub_sample=sub_sample_, bn_layer=bn_layer_)
-        # out = net(img)
-        # print(out.size())
-        #
-        # img = torch.zeros(2, 3, 20, 20)
-        # net = NONLocalBlock2D(3, sub_sample=sub_sample_, bn_layer=bn_layer_)
-        # out = net(img)
-        # print(out.size())
+    img = torch.zeros(4, 128, 3, 3)
+    net = NONLocalBlock2D(128, sub_sample=False)
+    out = net(img)
+    # print(out.size())
 
-        img = torch.randn(2, 512, 12, 20, 20)
-        net = NONLocalBlock3D(512, sub_sample=sub_sample_, bn_layer=bn_layer_)
-        nParams = sum([p.nelement() for p in net.parameters()])
-        print('number of parameters: %d' % nParams)
-        out = net(img)
-        print(out.size())
+    # for (sub_sample_, bn_layer_) in [(True, True), (False, False), (True, False), (False, True)]:
+    #     # img = torch.zeros(2, 3, 20)
+    #     # net = NONLocalBlock1D(3, sub_sample=sub_sample_, bn_layer=bn_layer_)
+    #     # out = net(img)
+    #     # print(out.size())
+    #     #
+    #     # img = torch.zeros(2, 3, 20, 20)
+    #     # net = NONLocalBlock2D(3, sub_sample=sub_sample_, bn_layer=bn_layer_)
+    #     # out = net(img)
+    #     # print(out.size())
+    #
+    #     img = torch.randn(2, 512, 12, 20, 20)
+    #     net = NONLocalBlock3D(512, sub_sample=sub_sample_, bn_layer=bn_layer_)
+    #     nParams = sum([p.nelement() for p in net.parameters()])
+    #     print('number of parameters: %d' % nParams)
+    #     out = net(img)
+    #     print(out.size())

@@ -218,8 +218,6 @@ def getOneTyphoon(dir, build_nc_seq=False):
 
 
 if __name__ == '__main__':
-    # file_path = 'F:/data/msc/sst2000-2019.nc'
-    Sea_Surface_Temperature = xarray.open_dataarray('/home/dl/data/TCIE/mcs/sst2000-2019.nc', cache=True)
     # start = TM.time()
     # for i in range(10):
     # mvts, isi, sst = getOneTyphoon('/home/dl/data/TCIE/TC_IR_IMAGE/2019/201929_PHANFONE', build_nc_seq=True)

@@ -45,7 +45,7 @@ class MSFN(nn.Module):
             out = torch.stack([out, out_2, out_3], dim=3)
         else:
             out = torch.stack([out, out_2], dim=3)
-        out = self.no_local(out)
+        out, f_div_C, W_y = self.no_local(out, return_nl_map=True)
         out = self.pool1(out).squeeze()
 
         y = self.projector(out)

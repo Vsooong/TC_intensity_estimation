@@ -57,9 +57,9 @@ def min_times_number(a, b):
 
 
 
-# layers = 3
-# atts = []
-# for i in range(layers):
-#     atts.append(np.random.rand(3, 5))
-#
-# plot_attentin(atts)
+layers = 2
+atts = []
+for i in range(layers):
+    atts.append(np.random.rand(9,9))
+
+plot_attentin(atts)

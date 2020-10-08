@@ -118,4 +118,4 @@ def main(train_process=False, load_states=False):
 
 if __name__ == '__main__':
     which_model = 4
-    main(train_process=True, load_states=False)
+    main(train_process=False, load_states=True)

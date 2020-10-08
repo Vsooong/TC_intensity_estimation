@@ -10,7 +10,7 @@ seed: 42 # sacred handles automatic seeding when passed in the config
 batch_size: 128
 start_epoch: 0
 epochs: 200
-
+cuda: 'cuda:0'
 # model options
 resnet: "resnet18"
 
@@ -19,7 +19,7 @@ optimizer: "Adam" # or LARS (experimental)
 weight_decay: 1.0e-6 # "optimized using LARS [...] and weight decay of 10−6"
 img_scale_factor: 2
 img_root_dir: ["F:/data/TC_IR_IMAGE/","/home/dl/data/TCIE/TC_IR_IMAGE"]
-sea_surface_temperature: '/home/dl/data/TCIE/mcs/sst2000-2019.nc'
+sea_surface_temperature: ['/home/dl/data/TCIE/mcs/sst2000-2019.nc','F:/data/msc/sst2000-2019.nc']
 hidden_dim: 128
 img_size: 256
 sst_size: 60

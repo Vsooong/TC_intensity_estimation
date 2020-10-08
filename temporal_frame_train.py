@@ -81,12 +81,12 @@ def main(train_process=False, load_states=False):
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
     # dataset = TC_Data(years=[2006])
-    # dataset_test = TC_Data(years=[2006])
+    dataset_test = TC_Data(years=[2000, 2006, 2011, 2017])
     dataset = TC_Data()
-    dataset_test = TC_Data(years=args.test_years)
+    # dataset_test = TC_Data(years=args.test_years)
     print('Training samples:', len(dataset.targets))
     print('Test samples:', len(dataset_test.targets))
-    print('------------------------------------------\n')
+    print('----------------------------------------------')
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(params, lr=0.001)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
@@ -99,14 +99,14 @@ def main(train_process=False, load_states=False):
             if epoch % 3 == 0:
                 loss1, loss2, r = evaluate(model, dataset_test)
                 print("test performance:", loss1, loss2, r)
+                if loss2 < best_loss:
+                    best_loss = loss2
+                    path = os.path.join(args.save_model, model_name)
+                    torch.save(model.state_dict(), path)
+                    print('test performance improved, save model to:', path)
 
             loss_epoch = train_one_epoch(model, dataset, optimizer, criterion)
             lr_scheduler.step()
-            if loss_epoch < best_loss:
-                best_loss = loss_epoch
-                path = os.path.join(args.save_model, model_name)
-                torch.save(model.state_dict(), path)
-                print('performance improved, save model to:', path)
 
             print('Epoch:', epoch, loss_epoch)
             print('----------------------------------------------')
@@ -118,4 +118,4 @@ def main(train_process=False, load_states=False):
 
 if __name__ == '__main__':
     which_model = 4
-    main(train_process=False, load_states=True)
+    main(train_process=True, load_states=False)

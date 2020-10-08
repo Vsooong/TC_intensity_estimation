@@ -18,7 +18,7 @@ class MSFN(nn.Module):
         self.encoder3 = encoder3
 
         self.pool1 = nn.AdaptiveAvgPool2d(output_size=(1, 1))
-        self.no_local = NONLocalBlock2D(n_hidden)
+        self.no_local = NONLocalBlock2D(n_hidden, inter_channels=n_hidden, sub_sample=False)
         self.projector = nn.Sequential(
             nn.Linear(n_hidden, n_hidden, bias=False),
             nn.LeakyReLU(),

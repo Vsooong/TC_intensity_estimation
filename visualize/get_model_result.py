@@ -4,7 +4,7 @@ from TC_data import TC_Data
 import os
 import numpy as np
 from TC_estimate.MSFN import get_MSFN
-
+from TC_estimate.MSFN_GF import get_MSFN_GF
 
 def evaluate(model, dataset):
     model.eval()
@@ -22,7 +22,6 @@ def evaluate(model, dataset):
             print(targets)
             print(pred)
         targets = targets[:, -1, :]
-
         total_loss1 += evaluateL1(targets, pred).data.item()
         total_loss2 += evaluateL2(targets, pred).data.item()
         n_samples += len(targets)
@@ -34,12 +33,12 @@ def evaluate(model, dataset):
 
 
 def main():
-    model = get_MSFN(load_states=True)
-    model_name = 'MSFN.pth'
+    model = get_MSFN_GF(load_states=True)
+    model_name = 'MSFN_GF.pth'
     print('use model:', model_name)
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
-    dataset_test = TC_Data(years=[2016])
+    dataset_test = TC_Data(years=[2000,2005,2009,2015])
     # dataset_test = TC_Data(years=args.test_years)
     print('Test samples:', len(dataset_test.targets))
     print('------------------------------------------\n')

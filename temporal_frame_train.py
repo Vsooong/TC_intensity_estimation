@@ -17,11 +17,11 @@ def train_one_epoch(model, dataset, optimizer, criterion):
     for one_ty in dataset.get_one_ty():
         images, efactors, envsst, targets = one_ty
         if which_model == 1:
-            pred = model(images).squeeze()
+            pred = model(images).squeeze(-1)
         else:
-            pred = model(images, efactors, envsst).squeeze()
+            pred = model(images, efactors, envsst).squeeze(-1)
+        targets=targets[0,:,:]
         optimizer.zero_grad()
-        targets=targets.squeeze()
         loss = criterion(targets, pred)
         loss.backward()
         optimizer.step()
@@ -39,17 +39,17 @@ def evaluate(model, dataset):
     labels = []
     predicts = []
 
-    for minibatch in dataset.get_batches():
-        images, efactors, envsst, targets = minibatch
+    for one_ty in dataset.get_one_ty():
+        images, efactors, envsst, targets = one_ty
         if which_model == 1:
-            pred = model(images).squeeze()
+            pred = model(images).squeeze(-1)
         else:
-            pred = model(images, efactors, envsst).squeeze()
+            pred = model(images, efactors, envsst).squeeze(-1)
+        targets = targets[0, :, :]
         if np.isnan(pred.data.cpu()).sum() != 0:
             print(efactors)
             print(targets)
             print(pred)
-        targets=targets.squeeze()
         total_loss1 += evaluateL1(targets, pred).data.item()
         total_loss2 += evaluateL2(targets, pred).data.item()
         n_samples += len(targets)
@@ -80,7 +80,8 @@ def main(train_process=False, load_states=False):
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
     # dataset = TC_Data(years=[2006])
-    dataset_test = TC_Data(years=[2000, 2006, 2011, 2017])
+    test_years = [2000, 2006, 2011, 2017]
+    dataset_test = TC_Data(years=test_years)
     dataset = TC_Data()
     # dataset_test = TC_Data(years=args.test_years)
     print('Training samples:', len(dataset.targets))
@@ -116,5 +117,5 @@ def main(train_process=False, load_states=False):
 
 
 if __name__ == '__main__':
-    which_model = 4
+    which_model = 2
     main(train_process=True, load_states=False)

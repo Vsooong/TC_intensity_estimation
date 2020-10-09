@@ -85,6 +85,6 @@ if __name__ == '__main__':
     output, f_div_C, W_y = model(input1, input2, input3, return_nl_map=True)
     end = time.time()
     print(end - start)
-    print(output.shape)
+    print(output.squeeze(-1).shape)
     print(f_div_C.shape)
     print(W_y.shape)

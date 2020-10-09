@@ -15,15 +15,14 @@ Sea_Surface_Temperature = None
 
 class TC_Data(Dataset):
     def __init__(self, data_root=args.img_root, years=args.train_years, past_window=args.past_window,
-                 device=args.device, use_batch=False):
+                 device=args.device):
         self.typhoons = self.init_years(data_root, years)
         self.past_window = past_window
         self.device = device
         global Sea_Surface_Temperature
         if Sea_Surface_Temperature is None:
             Sea_Surface_Temperature = xarray.open_dataarray(args.sea_surface_temperature, cache=True)
-        if use_batch:
-            self.efactors, self.images, self.env_sst, self.targets, self.ids = self._build_seq_data()
+        self.efactors, self.images, self.env_sst, self.targets, self.ids = self._build_seq_data()
 
     def get_batches(self, batch_size=args.batch_size):
         length = self.efactors.size(0)
@@ -56,17 +55,14 @@ class TC_Data(Dataset):
 
     def get_one_ty(self):
         tphns = len(self.typhoons)
-        efactor = None
-        images = None
-        env_sst = None
-        target = None
+        length = self.efactors.size(0)
+        index = torch.as_tensor(range(length), device=self.device, dtype=torch.long)
         for idx in range(0, tphns):
-            ty = self.typhoons[idx]
-            mvts, isi, ssts, times = getOneTyphoon(ty, True)
-            efactor = mvts[:, 0:10].to(self.device)
-            images = isi.to(self.device)
-            env_sst = ssts.to(self.device)
-            target = mvts[:, 10:].to(self.device)
+            excerpt = index[self.ids == idx]
+            efactor = torch.as_tensor(self.efactors[excerpt].unsqueeze(0)).to(self.device)
+            images = torch.as_tensor(self.images[excerpt].unsqueeze(0)).to(self.device)
+            env_sst = torch.as_tensor(self.env_sst[excerpt].unsqueeze(0)).to(self.device)
+            target = torch.as_tensor(self.targets[excerpt].unsqueeze(0)).to(self.device)
             yield images, efactor, env_sst, target
 
     def init_years(self, data_root, years):
@@ -244,12 +240,9 @@ if __name__ == '__main__':
     # print(end - start)
 
     tc_data = TC_Data(years=[2000])
-
     for one_ty in tc_data.get_one_ty():
         images, efactors, envsst, targets = one_ty
-        #     targets = targets[:, -1, :]
-        targets=targets.squeeze()
+    #     #     targets = targets[:, -1, :]
         print(envsst.shape)
         print(efactors.shape)
         print(targets.shape)
-

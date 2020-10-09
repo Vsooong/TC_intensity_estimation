@@ -55,7 +55,6 @@ class MSFN_DC(nn.Module):
             out = torch.cat([out, out_2, out_3], dim=-1)
         else:
             out = torch.cat([out, out_2], dim=-1)
-        print(out.shape)
 
         y = self.projector(out)
         return y

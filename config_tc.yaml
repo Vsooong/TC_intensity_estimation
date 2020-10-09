@@ -10,7 +10,7 @@ seed: 42 # sacred handles automatic seeding when passed in the config
 batch_size: 128
 start_epoch: 0
 epochs: 200
-cuda: 'cuda:0'
+cuda: 'cuda:1'
 # model options
 resnet: "resnet18"
 

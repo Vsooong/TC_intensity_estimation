@@ -14,14 +14,14 @@ def train_one_epoch(model, dataset, optimizer, criterion):
     global which_model
     model.train()
     loss_epoch = 0
-    for minibatch in dataset.get_batches():
-        images, efactors, envsst, targets = minibatch
+    for one_ty in dataset.get_one_ty():
+        images, efactors, envsst, targets = one_ty
         if which_model == 1:
-            pred = model(images)
+            pred = model(images).squeeze()
         else:
-            pred = model(images, efactors, envsst)
+            pred = model(images, efactors, envsst).squeeze()
         optimizer.zero_grad()
-        targets = targets[:, -1, :]
+        targets=targets.squeeze()
         loss = criterion(targets, pred)
         loss.backward()
         optimizer.step()
@@ -42,15 +42,14 @@ def evaluate(model, dataset):
     for minibatch in dataset.get_batches():
         images, efactors, envsst, targets = minibatch
         if which_model == 1:
-            pred = model(images)
+            pred = model(images).squeeze()
         else:
-            pred = model(images, efactors, envsst)
+            pred = model(images, efactors, envsst).squeeze()
         if np.isnan(pred.data.cpu()).sum() != 0:
             print(efactors)
             print(targets)
             print(pred)
-        targets = targets[:, -1, :]
-
+        targets=targets.squeeze()
         total_loss1 += evaluateL1(targets, pred).data.item()
         total_loss2 += evaluateL2(targets, pred).data.item()
         n_samples += len(targets)

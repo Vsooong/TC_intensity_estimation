@@ -1,17 +1,18 @@
-from single_frame_train import evaluateL1, evaluateL2
 from utils.Utils import args
 from TC_data import TC_Data
 import xarray
 import numpy as np
 from TC_estimate.MSFN import get_MSFN
-from TC_estimate.MSFN_GF import get_MSFN_GF
+import torch.nn as nn
 from TC_data import getOneTyphoon
 import torch
-
+import os
 Sea_Surface_Temperature = None
 
 
 def evaluate(model, dataset):
+    evaluateL1 = nn.L1Loss(reduction='sum')
+    evaluateL2 = nn.MSELoss(reduction='sum')
     model.eval()
     n_samples = 0
     total_loss1 = 0
@@ -41,7 +42,7 @@ def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR'):
     global Sea_Surface_Temperature
     if Sea_Surface_Temperature is None:
         Sea_Surface_Temperature = xarray.open_dataarray(args.sea_surface_temperature, cache=True)
-    mvts, isi, sst = getOneTyphoon(ty, build_nc_seq=True, SST=Sea_Surface_Temperature)
+    mvts, isi, sst,times = getOneTyphoon(ty, build_nc_seq=True, SST=Sea_Surface_Temperature)
     efactors = torch.as_tensor(mvts[:, 0:10])
     target = torch.as_tensor(mvts[:, 10:])
     images = torch.as_tensor(isi)
@@ -64,7 +65,8 @@ def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR'):
     X_ef = torch.stack(X_ef, dim=0).to(device)
     X_im = torch.stack(X_im, dim=0).to(device)
     X_sst = torch.stack(X_sst, dim=0).to(device)
-    return X_im, X_ef, X_sst, target[past_window - 1:]
+
+    return X_im, X_ef, X_sst, target[past_window - 1:],times[past_window - 1:]
 
 
 def estimate_one_ty(X_im, X_ef, X_sst, model):
@@ -74,7 +76,7 @@ def estimate_one_ty(X_im, X_ef, X_sst, model):
 
 
 def get_model():
-    model = get_MSFN(load_states=False)
+    model = get_MSFN(load_states=True)
     model_name = 'MSFN.pth'
     print('use model:', model_name)
     nParams = sum([p.nelement() for p in model.parameters()])
@@ -84,7 +86,7 @@ def get_model():
 
 def main():
     model = get_model()
-    dataset_test = TC_Data(years=[2000, 2005, 2009, 2015])
+    dataset_test = TC_Data(years=[2015])
     # dataset_test = TC_Data(years=args.test_years)
     print('Test samples:', len(dataset_test.targets))
     print('------------------------------------------\n')
@@ -94,7 +96,8 @@ def main():
 
 if __name__ == '__main__':
     # main()
-    X_im, X_ef, X_sst, target = build_one_ty()
-    model = get_model()
-    pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
-    print(pred.shape,f_div_C.shape,W_y.shape)
+    #
+    X_im, X_ef, X_sst, target,times = build_one_ty()
+    # model = get_model()
+    # pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+    # print(pred.shape,f_div_C.shape,W_y.shape)

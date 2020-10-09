@@ -128,7 +128,7 @@ class TrajGRU(BaseConvRNN):
 
     # inputs 和 states 不同时为空
     # inputs: S*B*C*H*W
-    def forward(self, inputs=None, states=None, seq_len=args.past_window):
+    def forward(self, inputs=None, states=None):
         if states is None:
             states = torch.zeros((inputs.size(1), self._num_filter, self._state_height,
                                   self._state_width), dtype=torch.float).to(args.device)
@@ -143,6 +143,7 @@ class TrajGRU(BaseConvRNN):
 
         prev_h = states
         outputs = []
+        seq_len=inputs.size(0)
         for i in range(seq_len):
             if inputs is not None:
                 flows = self._flow_generator(inputs[i, ...], prev_h)

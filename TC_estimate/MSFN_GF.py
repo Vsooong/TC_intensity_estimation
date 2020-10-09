@@ -15,7 +15,7 @@ class MSFN_GF(nn.Module):
         self.encoder1 = encoder1
         self.encoder2 = encoder2
         self.encoder3 = encoder3
-        self.pool1 = nn.AdaptiveAvgPool2d(output_size=(1, 1))
+        self.GMF = nn.GRU(input_size=n_hidden * 3, hidden_size=n_hidden)
         self.projector = nn.Sequential(
             nn.Linear(n_hidden, n_hidden, bias=False),
             nn.LeakyReLU(),
@@ -30,21 +30,17 @@ class MSFN_GF(nn.Module):
     def forward(self, x_1, x_2, x_3=None):
         x_1 = x_1.transpose(0, 1).contiguous()
         state, output_1 = self.encoder1(x_1)
-        out = output_1.permute(1, 2, 0).contiguous()
 
         x_2 = x_2.transpose(0, 1).contiguous()
         output_2 = self.encoder2(x_2)
-        out_2 = output_2.permute(1, 2, 0).contiguous()
 
         if x_3 is not None:
             x_3 = x_3.transpose(0, 1).contiguous()
             state, output_3 = self.encoder3(x_3)
-            out_3 = output_3.permute(1, 2, 0).contiguous()
-            out = torch.stack([out, out_2, out_3], dim=3)
+            out = torch.cat([output_1, output_2, output_3], dim=2)
         else:
-            out = torch.stack([out, out_2], dim=3)
-        out = self.pool1(out).squeeze()
-
+            out = torch.cat([output_1, output_2], dim=2)
+        out, hn = self.GMF(out)
         y = self.projector(out)
         return y
 
@@ -66,9 +62,9 @@ def get_MSFN_GF(load_states=False):
 
 if __name__ == '__main__':
     # (batch size,time step, channel, height, length)
-    input1 = torch.rand(4, 3, 1, 256, 256).to(args.device)
-    input2 = torch.rand(4, 3, 10).to(args.device)
-    input3 = torch.rand(4, 3, 1, 60, 60).to(args.device)
+    input1 = torch.rand(1, 30, 1, 256, 256).to(args.device)
+    input2 = torch.rand(1, 30, 10).to(args.device)
+    input3 = torch.rand(1, 30, 1, 60, 60).to(args.device)
 
     model = get_MSFN_GF()
     nParams = sum([p.nelement() for p in model.parameters()])

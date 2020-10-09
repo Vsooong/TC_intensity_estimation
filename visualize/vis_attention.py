@@ -1,11 +1,11 @@
 import math
-import cv2
 import pandas
-import seaborn as sns;
+import seaborn as sns
 from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-
+from visualize.get_model_result import estimate_one_ty, build_one_ty, get_model
+import os
 
 
 def build_att(atts):
@@ -56,10 +56,31 @@ def min_times_number(a, b):
     return a * b / math.gcd(a, b)
 
 
+def parse_one_ty():
+    X_im, X_ef, X_sst, target,times = build_one_ty()
+    assert len(X_im)==len(times)
 
-layers = 2
-atts = []
-for i in range(layers):
-    atts.append(np.random.rand(9,9))
+    model = get_model()
+    pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+    print(pred.shape, f_div_C.shape, W_y.shape)
+    pred = pred.cpu().data
+    f_div_C = f_div_C.cpu().data
+    W_y = np.abs(W_y.cpu().detach().numpy())
+    layers = pred.size(0)
+    atts = []
+    print(np.shape(W_y))
+    maxx = np.max(W_y)
+    minn = np.min(W_y)
+    for i in range(layers):
+        attention = W_y[i].mean(axis=0)
+        sns.heatmap(attention.transpose(), cmap="Greys", vmax=0.5, vmin=0.0,annot=True)
+        path = os.path.join('F:/Python_Project/TC_intensity_estimation/Plots/attention/', f'{times[i]}.jpg')
+        plt.savefig(path)
+        plt.clf()
 
-plot_attentin(atts)
+        # atts.append(f_div_C)
+    # plot_attentin(atts)
+
+
+if __name__ == '__main__':
+    parse_one_ty()

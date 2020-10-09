@@ -15,15 +15,15 @@ Sea_Surface_Temperature = None
 
 class TC_Data(Dataset):
     def __init__(self, data_root=args.img_root, years=args.train_years, past_window=args.past_window,
-                 device=args.device):
+                 device=args.device, use_batch=False):
         self.typhoons = self.init_years(data_root, years)
         self.past_window = past_window
         self.device = device
         global Sea_Surface_Temperature
         if Sea_Surface_Temperature is None:
             Sea_Surface_Temperature = xarray.open_dataarray(args.sea_surface_temperature, cache=True)
-
-        self.efactors, self.images, self.env_sst, self.targets, self.ids = self._build_seq_data()
+        if use_batch:
+            self.efactors, self.images, self.env_sst, self.targets, self.ids = self._build_seq_data()
 
     def get_batches(self, batch_size=args.batch_size):
         length = self.efactors.size(0)
@@ -54,6 +54,21 @@ class TC_Data(Dataset):
             Y_int = torch.stack(Y_int, dim=0).to(self.device)
             yield X_im, X_ef, X_sst, Y_int
 
+    def get_one_ty(self):
+        tphns = len(self.typhoons)
+        efactor = None
+        images = None
+        env_sst = None
+        target = None
+        for idx in range(0, tphns):
+            ty = self.typhoons[idx]
+            mvts, isi, ssts, times = getOneTyphoon(ty, True)
+            efactor = mvts[:, 0:10].to(self.device)
+            images = isi.to(self.device)
+            env_sst = ssts.to(self.device)
+            target = mvts[:, 10:].to(self.device)
+            yield images, efactor, env_sst, target
+
     def init_years(self, data_root, years):
         typhoon_list = []
 
@@ -76,7 +91,7 @@ class TC_Data(Dataset):
 
         for idx in range(0, tphns):
             ty = self.typhoons[idx]
-            mvts, isi, ssts = getOneTyphoon(ty, True)
+            mvts, isi, ssts, times = getOneTyphoon(ty, True)
             efactor.append(mvts[:, 0:10])
             images.append(isi)
             env_sst.append(ssts)
@@ -141,13 +156,14 @@ def get_sst(file_path='F:/data/msc/sst2000-2019.nc'):
     return sst
 
 
-def getOneTyphoon(dir, build_nc_seq=False,SST=None):
+def getOneTyphoon(dir, build_nc_seq=False, SST=None):
     if SST is None:
         global Sea_Surface_Temperature
-        SST=Sea_Surface_Temperature
+        SST = Sea_Surface_Temperature
     mvts = []
     isi = []
     ssts = []
+    times = []
     files = sorted([os.path.join(dir, i) for i in os.listdir(dir)])
     channel1 = sorted(os.listdir(files[0]))
     transform = get_transform()
@@ -213,10 +229,11 @@ def getOneTyphoon(dir, build_nc_seq=False,SST=None):
             im1 = Image.open(os.path.join(files[0], image)).convert("L")
             im1 = transform(im1)
             isi.append(im1)
+            times.append('-'.join(temp[:2]))
     mvts = torch.tensor(mvts)
     isi = torch.stack(isi, dim=0)
     ssts = torch.stack(ssts, dim=0)
-    return mvts, isi, ssts
+    return mvts, isi, ssts, times
 
 
 if __name__ == '__main__':
@@ -227,24 +244,12 @@ if __name__ == '__main__':
     # print(end - start)
 
     tc_data = TC_Data(years=[2000])
-    print(tc_data.env_sst.shape)
 
-    for minibatch in tc_data.get_batches():
-        images, efactors, envsst, targets = minibatch
+    for one_ty in tc_data.get_one_ty():
+        images, efactors, envsst, targets = one_ty
         #     targets = targets[:, -1, :]
+        targets=targets.squeeze()
         print(envsst.shape)
         print(efactors.shape)
-    #     print(efactors.shape)
-    #     print(targets.shape)
+        print(targets.shape)
 
-    # typhoon_list = []
-    #
-    # for i in sorted(os.listdir(args.img_root), reverse=True):
-    #     if os.path.isdir(os.path.join(args.img_root, i)):
-    #         ip = os.path.join(args.img_root, i)
-    #         for j in sorted(os.listdir(ip)):
-    #             jp = os.path.join(ip, j)
-    #             if int(i) in args.train_years:
-    #                 typhoon_list.append(jp)
-    # for ty in typhoon_list:
-    #     getOneTyphoon(ty)

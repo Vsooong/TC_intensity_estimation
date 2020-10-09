@@ -57,7 +57,7 @@ class Encoder(nn.Module):
 
 if __name__ == '__main__':
     # (time step,batch size, channel, height, length)
-    input = torch.rand(3, 4, 1, 256, 256).to(args.device)
+    input = torch.rand(30, 1, 1, 256, 256).to(args.device)
     model = Encoder(convlstm_encoder_params[0], convlstm_encoder_params[1], head_params[0]).to(args.device)
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)

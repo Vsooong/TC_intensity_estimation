@@ -23,7 +23,7 @@ sea_surface_temperature: ['/home/dl/data/TCIE/mcs/sst2000-2019.nc','F:/data/msc/
 hidden_dim: 256
 img_size: 256
 sst_size: 60
-past_window: 5
+past_window: 3
 stride: 1
 dropout: 0.0
 time_spot:  ['0000', '0600', '1200', '1800']

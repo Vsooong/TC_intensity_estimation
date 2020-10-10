@@ -133,7 +133,7 @@ if __name__ == '__main__':
     img = torch.zeros(4, 128, 3, 3)
     net = NONLocalBlock2D(128, sub_sample=False)
     out = net(img)
-    # print(out.size())
+    print(out.size())
 
     # for (sub_sample_, bn_layer_) in [(True, True), (False, False), (True, False), (False, True)]:
     #     # img = torch.zeros(2, 3, 20)

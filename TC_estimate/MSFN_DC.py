@@ -76,9 +76,9 @@ def get_MSFN_DC(load_states=False):
 
 if __name__ == '__main__':
     # (batch size,time step, channel, height, length)
-    input1 = torch.rand(1, 30, 1, 256, 256).to(args.device)
-    input2 = torch.rand(1, 30, 10).to(args.device)
-    input3 = torch.rand(1, 30, 1, 60, 60).to(args.device)
+    input1 = torch.rand(2, 32, 1, 256, 256).to(args.device)
+    input2 = torch.rand(2, 32, 10).to(args.device)
+    input3 = torch.rand(2, 32, 1, 60, 60).to(args.device)
 
     model = get_MSFN_DC()
     nParams = sum([p.nelement() for p in model.parameters()])

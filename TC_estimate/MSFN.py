@@ -4,7 +4,7 @@ from utils.Utils import args
 from blocks.encoder import Encoder
 from blocks.net_params import encoder_params, convlstm_encoder_params, head_params, sst_encoder_params
 import os
-import torch.nn.functional as F
+from torch.nn.utils.rnn import pack_padded_sequence
 from TC_estimate.MSFN_DC import EF_LSTM
 import time
 from blocks.non_local_em_gaussian import NONLocalBlock2D, NONLocalBlock1D
@@ -16,10 +16,8 @@ class MSFN(nn.Module):
         self.encoder1 = encoder1
         self.encoder2 = encoder2
         self.encoder3 = encoder3
-
-        self.GMF = nn.GRU(input_size=n_hidden * 3, hidden_size=n_hidden)
-
         self.no_local = NONLocalBlock2D(n_hidden, inter_channels=n_hidden, sub_sample=False)
+        self.pool=nn.AdaptiveMaxPool2d(output_size=(1,1))
         self.projector = nn.Sequential(
             nn.Linear(n_hidden, n_hidden, bias=False),
             nn.LeakyReLU(),
@@ -33,9 +31,12 @@ class MSFN(nn.Module):
 
     def forward(self, x_1, x_2, x_3=None, return_nl_map=False):
         B, T, C, H, W = x_1.size()
+        window_size = args.past_window
+        pad_len = T + window_size - 1
+
         x_1 = x_1.transpose(0, 1).contiguous()
         state, output_1 = self.encoder1(x_1)
-        out = output_1.permute(1, 2, 0).contiguous()
+        out_1 = output_1.permute(1, 2, 0).contiguous()
 
         x_2 = x_2.transpose(0, 1).contiguous()
         output_2 = self.encoder2(x_2)
@@ -44,18 +45,28 @@ class MSFN(nn.Module):
         x_3 = x_3.transpose(0, 1).contiguous()
         state, output_3 = self.encoder3(x_3)
         out_3 = output_3.permute(1, 2, 0).contiguous()
-        out = torch.stack([out, out_2, out_3], dim=3)
-        f_div_C = None
-        W_y = None
-        if return_nl_map is True:
-            out, f_div_C, W_y = self.no_local(out, return_nl_map=True)
+        out = torch.stack([out_1, out_2, out_3], dim=3)
+
+        new_out=torch.zeros(size=(B,args.hidden_dim,pad_len,3),device=args.device)
+        new_out[:,:,window_size-1:,:]=out
+        outs=[]
+        f_divs=[]
+        W_ys=[]
+        for idx in range(T):
+            out_part=new_out[:,:,idx:idx+window_size,:]
+            out_part, f_div_C, W_y = self.no_local(out_part, return_nl_map=True)
+            out_part=self.pool(out_part)
+            outs.append(out_part)
+            f_divs.append(f_div_C)
+            W_ys.append(W_y)
+
+        out=torch.cat(outs,dim=-2).squeeze(-1)
+        out=out.permute(2,0,1)
+        out=self.projector(out)
+        if return_nl_map:
+            return out,f_divs,W_ys
         else:
-            out = self.no_local(out, return_nl_map=False)
-        out = out.permute(2, 0, 1, 3).contiguous()
-        out = out.view(T, B, -1)
-        out, hn = self.GMF(out)
-        y = self.projector(out)
-        return y, f_div_C, W_y
+            return out
 
 
 def get_MSFN(load_states=False):
@@ -74,9 +85,9 @@ def get_MSFN(load_states=False):
 
 if __name__ == '__main__':
     # (batch size,time step, channel, height, length)
-    input1 = torch.rand(1, 30, 1, 256, 256).to(args.device)
-    input2 = torch.rand(1, 30, 10).to(args.device)
-    input3 = torch.rand(1, 30, 1, 60, 60).to(args.device)
+    input1 = torch.rand(2, 32, 1, 256, 256).to(args.device)
+    input2 = torch.rand(2, 32, 10).to(args.device)
+    input3 = torch.rand(2, 32, 1, 60, 60).to(args.device)
 
     model = get_MSFN()
     nParams = sum([p.nelement() for p in model.parameters()])
@@ -86,5 +97,4 @@ if __name__ == '__main__':
     end = time.time()
     print(end - start)
     print(output.squeeze(-1).shape)
-    print(f_div_C.shape)
-    print(W_y.shape)
+    print(W_y[0].shape)

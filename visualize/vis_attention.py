@@ -58,23 +58,23 @@ def min_times_number(a, b):
 
 def parse_one_ty():
     X_im, X_ef, X_sst, target,times = build_one_ty()
-    assert len(X_im)==len(times)
+    assert X_im.size(1)==len(times)
 
     model = get_model()
     pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
-    print(pred.shape, f_div_C.shape, W_y.shape)
     pred = pred.cpu().data
-    f_div_C = f_div_C.cpu().data
-    W_y = np.abs(W_y.cpu().detach().numpy())
+    # f_div_C = f_div_C.cpu().data
+    # W_y = np.abs(W_y.cpu().detach().numpy())
     layers = pred.size(0)
-    atts = []
-    print(np.shape(W_y))
-    maxx = np.max(W_y)
-    minn = np.min(W_y)
+    # atts = []
+
     for i in range(layers):
-        attention = W_y[i].mean(axis=0)
+        w_i= np.abs(W_y[i].cpu().detach().numpy())
+        # print(np.shape(w_i))
+        attention = w_i.mean(axis=0)
         sns.heatmap(attention.transpose(), cmap="Greys", vmax=0.5, vmin=0.0,annot=True)
-        path = os.path.join('F:/Python_Project/TC_intensity_estimation/Plots/attention/', f'{times[i]}.jpg')
+        # plt.show()
+        path = os.path.join('D:/DATA/attentions/', f'{times[i]}.jpg')
         plt.savefig(path)
         plt.clf()
 

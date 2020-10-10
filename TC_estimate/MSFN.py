@@ -64,6 +64,8 @@ class MSFN(nn.Module):
         out=out.permute(2,0,1)
         out=self.projector(out)
         if return_nl_map:
+            W_ys=torch.cat(W_ys,dim=0)
+            f_divs = torch.cat(f_divs, dim=0)
             return out,f_divs,W_ys
         else:
             return out

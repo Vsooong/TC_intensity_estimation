@@ -4,9 +4,11 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-from visualize.get_model_result import estimate_one_ty, build_one_ty, get_model
+from visualize.get_model_result import estimate_one_ty, build_one_ty
 import os
-
+from blocks.net_params import encoder_params, convlstm_encoder_params, head_params, sst_encoder_params
+from utils.Utils import args
+from TC_estimate import MSFN_v1,MSFN
 
 def build_att(atts):
     attentions = []
@@ -55,26 +57,44 @@ def plot_attentin(attentions):
 def min_times_number(a, b):
     return a * b / math.gcd(a, b)
 
+def get_model(which=1):
+    if which==1:
+        # 按照past window 分段
+        model_name = 'MSFN-5-4.8.pth'
+        model=MSFN_v1.get_MSFN_v1(True,model_name)
+    else:
+        # 全序列
+        model_name = 'MSFN-5-4.8.pth'
+        model = MSFN.get_MSFN(True,model_name)
+    print('use model:', model_name)
+    nParams = sum([p.nelement() for p in model.parameters()])
+    print('number of parameters: %d' % nParams)
+    return model
 
-def parse_one_ty():
-    X_im, X_ef, X_sst, target,times = build_one_ty()
-    assert X_im.size(1)==len(times)
+def parse_one_ty(which_model=1):
+    args.past_window=5
+    if which_model==1:
+        X_im, X_ef, X_sst, target, times = build_one_ty(split=True)
+        assert X_im.size(0) == len(times)
+    else:
+        X_im, X_ef, X_sst, target, times = build_one_ty(split=False)
+        assert X_im.size(1) == len(times)
 
-    model = get_model()
+    model = get_model(which_model)
     pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
-    pred = pred.cpu().data
-    # f_div_C = f_div_C.cpu().data
+    print(W_y.shape)
+    target = target.cpu().detach().numpy()
+    # pred = pred.cpu().data
     # W_y = np.abs(W_y.cpu().detach().numpy())
     layers = pred.size(0)
-    # atts = []
-
     for i in range(layers):
-        w_i= np.abs(W_y[i].cpu().detach().numpy())
-        # print(np.shape(w_i))
+        w_i= W_y[i].cpu().detach().numpy()
+        w_i=np.abs(w_i)
         attention = w_i.mean(axis=0)
         sns.heatmap(attention.transpose(), cmap="Greys", vmax=0.5, vmin=0.0,annot=True)
+        name='-'.join([str(times[i]),str(target[i])])
         # plt.show()
-        path = os.path.join('D:/DATA/attentions/', f'{times[i]}.jpg')
+        path = os.path.join('D:/DATA/attentions/', f'{name}.jpg')
         plt.savefig(path)
         plt.clf()
 

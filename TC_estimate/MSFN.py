@@ -71,12 +71,12 @@ class MSFN(nn.Module):
             return out
 
 
-def get_MSFN(load_states=False):
+def get_MSFN(load_states=False,model_name='MSFN.pth'):
     encoder = Encoder(convlstm_encoder_params[0], convlstm_encoder_params[1], head_params[0]).to(args.device)
     ef_encoder = EF_LSTM()
     sst_encoder = Encoder(sst_encoder_params[0], sst_encoder_params[1], head_params[0]).to(args.device)
     model = MSFN(encoder, ef_encoder, sst_encoder).to(args.device)
-    path = os.path.join(args.save_model, 'MSFN-5-4.8.pth')
+    path = os.path.join(args.save_model, model_name)
     if load_states and os.path.exists(path):
         model.load_state_dict(torch.load(path, map_location=args.device))
         print('load temporal model from:', path)

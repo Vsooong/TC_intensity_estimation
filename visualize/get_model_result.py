@@ -45,10 +45,10 @@ def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR', split=False):
         Sea_Surface_Temperature = xarray.open_dataarray(args.sea_surface_temperature, cache=True)
     device = args.device
     mvts, isi, sst, times = getOneTyphoon(ty, build_nc_seq=True, SST=Sea_Surface_Temperature)
-    efactors = torch.as_tensor(mvts[:, 0:10]).unsqueeze(0).to(device)
-    target = torch.as_tensor(mvts[:, 10:]).unsqueeze(0).to(device)
-    images = torch.as_tensor(isi).unsqueeze(0).to(device)
-    env_sst = torch.as_tensor(sst).unsqueeze(0).to(device)
+    efactors = torch.as_tensor(mvts[:, 0:10])
+    target = torch.as_tensor(mvts[:, 10:])
+    images = torch.as_tensor(isi)
+    env_sst = torch.as_tensor(sst)
     if split:
         length = efactors.size(0)
         start_idx = 0
@@ -69,7 +69,10 @@ def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR', split=False):
         return X_im, X_ef, X_sst, target[past_window - 1:], times[past_window - 1:]
 
     else:
-
+        images=images.unsqueeze(0).to(device)
+        efactors = efactors.unsqueeze(0).to(device)
+        env_sst = env_sst.unsqueeze(0).to(device)
+        target = target.unsqueeze(0).to(device)
         return images, efactors, env_sst, target, times
 
 

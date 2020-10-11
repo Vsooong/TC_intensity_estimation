@@ -8,20 +8,69 @@ from TC_estimate.temporal_frame import get_basline_model
 from TC_estimate.MSFN_DC import get_MSFN_DC
 from TC_estimate.MSFN_GF import get_MSFN_GF
 from TC_estimate.MSFN import get_MSFN
+from TC_estimate.MSFN_v1 import get_MSFN_v1
+
+# def train_one_epoch(model, dataset, optimizer, criterion):
+#     global which_model
+#     model.train()
+#     loss_epoch = 0
+#     for one_ty in dataset.get_one_ty():
+#         images, efactors, envsst, targets = one_ty
+#         if which_model == 1:
+#             pred = model(images).squeeze(-1)
+#         else:
+#             pred = model(images, efactors, envsst).squeeze(-1)
+#         targets=targets[0,:,:]
+#         optimizer.zero_grad()
+#         loss = criterion(targets, pred)
+#         loss.backward()
+#         optimizer.step()
+#         loss_epoch += loss.item()
+#         # print(loss.item())
+#     return loss_epoch
+#
+# def evaluate(model, dataset):
+#     global which_model
+#     model.eval()
+#     n_samples = 0
+#     total_loss1 = 0
+#     total_loss2 = 0
+#     labels = []
+#     predicts = []
+#
+#     for one_ty in dataset.get_one_ty():
+#         images, efactors, envsst, targets = one_ty
+#         if which_model == 1:
+#             pred = model(images).squeeze(-1)
+#         else:
+#             pred = model(images, efactors, envsst).squeeze(-1)
+#         targets = targets[0, :, :]
+#         if np.isnan(pred.data.cpu()).sum() != 0:
+#             print(efactors)
+#             print(targets)
+#             print(pred)
+#         total_loss1 += evaluateL1(targets, pred).data.item()
+#         total_loss2 += evaluateL2(targets, pred).data.item()
+#         n_samples += len(targets)
+#         for index in range(len(targets)):
+#             labels.append(targets[index].data.item())
+#             predicts.append(pred[index].data.item())
+#     r = np.corrcoef(labels, predicts)[0][1]
+#     return total_loss1 / n_samples, np.sqrt(total_loss2 / n_samples), r
 
 
 def train_one_epoch(model, dataset, optimizer, criterion):
     global which_model
     model.train()
     loss_epoch = 0
-    for one_ty in dataset.get_one_ty():
-        images, efactors, envsst, targets = one_ty
+    for minibatch in dataset.get_batches():
+        images, efactors, envsst, targets = minibatch
         if which_model == 1:
-            pred = model(images).squeeze(-1)
+            pred = model(images)
         else:
-            pred = model(images, efactors, envsst).squeeze(-1)
-        targets=targets[0,:,:]
+            pred = model(images, efactors, envsst)
         optimizer.zero_grad()
+        targets = targets[:, -1, :]
         loss = criterion(targets, pred)
         loss.backward()
         optimizer.step()
@@ -39,17 +88,18 @@ def evaluate(model, dataset):
     labels = []
     predicts = []
 
-    for one_ty in dataset.get_one_ty():
-        images, efactors, envsst, targets = one_ty
+    for minibatch in dataset.get_batches():
+        images, efactors, targets = minibatch
         if which_model == 1:
-            pred = model(images).squeeze(-1)
+            pred = model(images)
         else:
-            pred = model(images, efactors, envsst).squeeze(-1)
-        targets = targets[0, :, :]
+            pred = model(images, efactors)
         if np.isnan(pred.data.cpu()).sum() != 0:
             print(efactors)
             print(targets)
             print(pred)
+        targets = targets[:, -1, :]
+
         total_loss1 += evaluateL1(targets, pred).data.item()
         total_loss2 += evaluateL2(targets, pred).data.item()
         n_samples += len(targets)
@@ -58,7 +108,6 @@ def evaluate(model, dataset):
             predicts.append(pred[index].data.item())
     r = np.corrcoef(labels, predicts)[0][1]
     return total_loss1 / n_samples, np.sqrt(total_loss2 / n_samples), r
-
 
 def main(train_process=False, load_states=False):
     global which_model
@@ -73,6 +122,9 @@ def main(train_process=False, load_states=False):
     elif which_model == 3:
         model = get_MSFN_GF(load_states=load_states)
         model_name = 'MSFN_GF.pth'
+    elif which_model==4:
+        model=get_MSFN_v1(load_states=load_states)
+        model_name='MSFN_v1.pth'
     else:
         model = get_MSFN(load_states=load_states)
         model_name = 'MSFN.pth'

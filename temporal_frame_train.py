@@ -89,11 +89,11 @@ def evaluate(model, dataset):
     predicts = []
 
     for minibatch in dataset.get_batches():
-        images, efactors, targets = minibatch
+        images, efactors, envsst, targets = minibatch
         if which_model == 1:
             pred = model(images)
         else:
-            pred = model(images, efactors)
+            pred = model(images, efactors, envsst)
         if np.isnan(pred.data.cpu()).sum() != 0:
             print(efactors)
             print(targets)

@@ -7,6 +7,7 @@ import torch.nn as nn
 from TC_data import getOneTyphoon
 import torch
 import os
+
 Sea_Surface_Temperature = None
 
 
@@ -38,34 +39,38 @@ def evaluate(model, dataset):
     return total_loss1 / n_samples, np.sqrt(total_loss2 / n_samples), r
 
 
-def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR'):
+def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR', split=False):
     global Sea_Surface_Temperature
     if Sea_Surface_Temperature is None:
         Sea_Surface_Temperature = xarray.open_dataarray(args.sea_surface_temperature, cache=True)
     device = args.device
-    mvts, isi, sst,times = getOneTyphoon(ty, build_nc_seq=True, SST=Sea_Surface_Temperature)
+    mvts, isi, sst, times = getOneTyphoon(ty, build_nc_seq=True, SST=Sea_Surface_Temperature)
     efactors = torch.as_tensor(mvts[:, 0:10]).unsqueeze(0).to(device)
     target = torch.as_tensor(mvts[:, 10:]).unsqueeze(0).to(device)
     images = torch.as_tensor(isi).unsqueeze(0).to(device)
     env_sst = torch.as_tensor(sst).unsqueeze(0).to(device)
-    return images,efactors,env_sst,target,times
-    # length = efactors.size(0)
-    # start_idx = 0
-    # index = torch.as_tensor(range(length), device=args.device, dtype=torch.long)
-    # past_window = args.past_window
-    # X_ef = []
-    # X_im = []
-    # X_sst = []
-    # while start_idx <= length - past_window:
-    #     excerpt = index[start_idx:(start_idx + past_window)]
-    #     X_ef.append(torch.as_tensor(efactors[excerpt]))
-    #     X_im.append(torch.as_tensor(images[excerpt]))
-    #     X_sst.append(torch.as_tensor(env_sst[excerpt]))
-    #     start_idx += 1
-    # X_ef = torch.stack(X_ef, dim=0).to(device)
-    # X_im = torch.stack(X_im, dim=0).to(device)
-    # X_sst = torch.stack(X_sst, dim=0).to(device)
-    # return X_im, X_ef, X_sst, target[past_window - 1:],times[past_window - 1:]
+    if split:
+        length = efactors.size(0)
+        start_idx = 0
+        index = torch.as_tensor(range(length), device=args.device, dtype=torch.long)
+        past_window = args.past_window
+        X_ef = []
+        X_im = []
+        X_sst = []
+        while start_idx <= length - past_window:
+            excerpt = index[start_idx:(start_idx + past_window)]
+            X_ef.append(torch.as_tensor(efactors[excerpt]))
+            X_im.append(torch.as_tensor(images[excerpt]))
+            X_sst.append(torch.as_tensor(env_sst[excerpt]))
+            start_idx += 1
+        X_ef = torch.stack(X_ef, dim=0).to(device)
+        X_im = torch.stack(X_im, dim=0).to(device)
+        X_sst = torch.stack(X_sst, dim=0).to(device)
+        return X_im, X_ef, X_sst, target[past_window - 1:], times[past_window - 1:]
+
+    else:
+
+        return images, efactors, env_sst, target, times
 
 
 def estimate_one_ty(X_im, X_ef, X_sst, model):
@@ -96,7 +101,7 @@ def main():
 if __name__ == '__main__':
     # main()
     #
-    X_im, X_ef, X_sst, target,times = build_one_ty()
+    X_im, X_ef, X_sst, target, times = build_one_ty()
     print(X_im.shape)
     print(X_sst.shape)
     print(target.shape)

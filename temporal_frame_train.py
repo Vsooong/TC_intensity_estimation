@@ -10,6 +10,7 @@ from TC_estimate.MSFN_GF import get_MSFN_GF
 from TC_estimate.MSFN import get_MSFN
 from TC_estimate.MSFN_v1 import get_MSFN_v1
 
+
 # def train_one_epoch(model, dataset, optimizer, criterion):
 #     global which_model
 #     model.train()
@@ -109,6 +110,7 @@ def evaluate(model, dataset):
     r = np.corrcoef(labels, predicts)[0][1]
     return total_loss1 / n_samples, np.sqrt(total_loss2 / n_samples), r
 
+
 def main(train_process=False, load_states=False):
     global which_model
     device = args.device
@@ -122,9 +124,9 @@ def main(train_process=False, load_states=False):
     elif which_model == 3:
         model = get_MSFN_GF(load_states=load_states)
         model_name = 'MSFN_GF.pth'
-    elif which_model==4:
-        model=get_MSFN_v1(load_states=load_states)
-        model_name='MSFN_v1.pth'
+    elif which_model == 4:
+        model = get_MSFN_v1(load_states=load_states)
+        model_name = 'MSFN_v1.pth'
     else:
         model = get_MSFN(load_states=load_states)
         model_name = 'MSFN.pth'
@@ -156,6 +158,8 @@ def main(train_process=False, load_states=False):
                     path = os.path.join(args.save_model, model_name)
                     torch.save(model.state_dict(), path)
                     print('test performance improved, save model to:', path)
+                if loss2 < 4.8:
+                    break
 
             loss_epoch = train_one_epoch(model, dataset, optimizer, criterion)
             lr_scheduler.step()

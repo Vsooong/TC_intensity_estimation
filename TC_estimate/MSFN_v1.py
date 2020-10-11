@@ -17,8 +17,9 @@ class MSFNv1(nn.Module):
         self.encoder2 = encoder2
         self.encoder3 = encoder3
 
-        self.pool1 = nn.AdaptiveAvgPool2d(output_size=(1, 1))
         self.no_local = NONLocalBlock2D(n_hidden, inter_channels=n_hidden, sub_sample=False)
+        self.pool1 = nn.AdaptiveMaxPool2d(output_size=(1, 1))
+
         self.projector = nn.Sequential(
             nn.Linear(n_hidden, n_hidden, bias=False),
             nn.LeakyReLU(),
@@ -58,12 +59,12 @@ class MSFNv1(nn.Module):
             return y
 
 
-def get_MSFN_v1(load_states=False,model_name='MSFN_v1.pth'):
+def get_MSFN_v1(load_states=False, model_name='MSFN_v1.pth'):
     encoder = Encoder(convlstm_encoder_params[0], convlstm_encoder_params[1], head_params[0]).to(args.device)
     ef_encoder = EF_LSTM()
     sst_encoder = Encoder(sst_encoder_params[0], sst_encoder_params[1], head_params[0]).to(args.device)
     model = MSFNv1(encoder, ef_encoder, sst_encoder).to(args.device)
-    path = os.path.join(args.save_model,model_name )
+    path = os.path.join(args.save_model, model_name)
     if load_states and os.path.exists(path):
         model.load_state_dict(torch.load(path, map_location=args.device))
         print('load temporal model from:', path)

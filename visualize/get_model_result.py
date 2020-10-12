@@ -105,13 +105,11 @@ def estimate_one_ty(X_im, X_ef, X_sst, model):
 def get_model(which=1):
     if which == 1:
         # 按照past window 分段
-        # args.hidden_dim=128
-        # model_name = 'MSFN_v1.pth'
-        model_name='MSFN_v1_3.5_256.pth'
+        model_name = 'MSFN_v1.pth'
+        # model_name='MSFN_v1_3.5_256.pth'
         model = MSFN_v1.get_MSFN_v1(True, model_name)
     else:
         # 全序列
-        args.hidden_dim=256
         model_name = 'MSFN-5-4.8.pth'
         model = MSFN.get_MSFN(True, model_name)
     print('use model:', model_name)

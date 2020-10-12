@@ -19,16 +19,9 @@ class MSFNv1(nn.Module):
 
         self.no_local = NONLocalBlock2D(n_hidden, inter_channels=n_hidden, sub_sample=True)
         self.pool1 = nn.AdaptiveMaxPool2d(output_size=(1, 1))
-
         self.projector = nn.Sequential(
-            nn.Linear(n_hidden, n_hidden, bias=False),
-            nn.LeakyReLU(),
-            nn.Dropout(args.dropout),
-            nn.Linear(n_hidden, n_hidden, bias=False),
-            nn.LeakyReLU(),
-            nn.Dropout(args.dropout),
-            nn.Linear(n_hidden, 1, bias=True),
-            nn.LeakyReLU(),
+            # nn.Dropout(args.dropout),
+            nn.Linear(n_hidden, 1)
         )
 
     def forward(self, x_1, x_2, x_3=None, return_nl_map=False):
@@ -46,6 +39,10 @@ class MSFNv1(nn.Module):
             out = torch.stack([out, out_2, out_3], dim=3)
         else:
             out = torch.stack([out, out_2], dim=3)
+
+        # go through a relu function to make sure the feature maps are all positive
+        out = torch.relu(out)
+
         if return_nl_map is True:
             out, f_div_C, W_y = self.no_local(out, return_nl_map=True)
             out = self.pool1(out).squeeze()
@@ -55,6 +52,7 @@ class MSFNv1(nn.Module):
         else:
             out = self.no_local(out, return_nl_map=False)
             out = self.pool1(out).squeeze()
+
             y = self.projector(out)
             return y
 
@@ -79,7 +77,7 @@ if __name__ == '__main__':
     input2 = torch.rand(4, 3, 10).to(args.device)
     input3 = torch.rand(4, 3, 1, 60, 60).to(args.device)
 
-    model = get_MSFN_v1()
+    model = get_MSFN_v1(load_states=True)
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
     start = time.time()

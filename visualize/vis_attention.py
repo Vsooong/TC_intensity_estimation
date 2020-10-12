@@ -75,7 +75,7 @@ def parse_one_ty(which_model=1):
     target = target.cpu().detach().numpy()
     f_div_C=f_div_C.cpu().detach().numpy()
 
-    W_y = np.abs(W_y)
+    # W_y = np.abs(W_y)
     m = np.mean(W_y, axis=1)
     max_value = np.max(m)
     min_value = np.min(m)

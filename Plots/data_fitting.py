@@ -45,12 +45,6 @@ def metrics_every_year(labels, predict, years=2016):
     return get_metrics(res1, res2)
 
 
-def flatten(dict):
-    res = []
-    for k, v in dict.items():
-        res.append(v)
-    return np.concatenate(res, axis=0)
-
 
 if __name__ == '__main__':
     np.random.seed(4)

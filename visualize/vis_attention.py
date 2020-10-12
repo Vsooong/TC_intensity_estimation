@@ -64,11 +64,13 @@ def parse_one_ty(which_model=1):
         assert X_im.size(0) == len(times)
     else:
         X_im, X_ef, X_sst, target, times = build_one_ty(split=False)
+        target=target[0]
         assert X_im.size(1) == len(times)
 
     model = get_model(which_model)
     pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
     print(W_y.shape)
+    print(target.shape)
     target = target.cpu().detach().numpy()
     # pred = pred.cpu().data
     # W_y = np.abs(W_y.cpu().detach().numpy())

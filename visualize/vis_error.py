@@ -7,22 +7,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
-
+from visualize.vis_samples import plot_error_with_value,flatten,bias
 sns.set_theme(color_codes=True)
 sns.set_style("whitegrid")
 
-
-def flatten(dict):
-    res = []
-    for k, v in dict.items():
-        res.append(v)
-    return np.concatenate(res, axis=0)
-
-
-def bias(label, pred):
-    assert len(label) == len(pred)
-    diff = np.asarray(pred) - np.asarray(label)
-    return np.sum(diff) / len(label)
 
 def linear_fit(label=None, estimation=None):
     if label is None or estimation is None:
@@ -36,7 +24,14 @@ def linear_fit(label=None, estimation=None):
     print(reg.intercept_)
     print(r2_score(label, estimation))
 
-
+def plot_curve(label=None, estimation=None):
+    if label is None or estimation is None:
+        label = np.load('data/label_ints.npy', allow_pickle=True).item()
+        estimation = np.load('data/estim_ints.npy', allow_pickle=True).item()
+    label = flatten(label)
+    estimation = flatten(estimation)
+    print(max(label), min(estimation))
+    plot_error_with_value(label, estimation, 10, 75, 5,ymin=-20,ymax=20)
 
 
 def plot_scattor(label=None, estimation=None,order=1):
@@ -84,5 +79,6 @@ def get_estimation(data_file='F:/data/TC_IR_IMAGE/'):
 if __name__ == '__main__':
     # labels, predictions = get_estimation()
     # plot_scattor()
-    linear_fit()
+    # linear_fit()
+    plot_curve()
     pass

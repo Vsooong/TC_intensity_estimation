@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from Plots.data_fitting import flatten
+from visualize.vis_samples import flatten
 from utils.Utils import args
 
 

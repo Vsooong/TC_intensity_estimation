@@ -57,8 +57,8 @@ def min_times_number(a, b):
     return a * b / math.gcd(a, b)
 
 
-def parse_one_ty(which_model=2):
-    args.past_window = 5
+def parse_one_ty(which_model=1):
+    args.past_window = 3
     if which_model == 1:
         X_im, X_ef, X_sst, target, times = build_one_ty(split=True)
         assert X_im.size(0) == len(times)
@@ -74,7 +74,7 @@ def parse_one_ty(which_model=2):
     W_y = W_y.cpu().detach().numpy()
     target = target.cpu().detach().numpy()
     f_div_C=f_div_C.cpu().detach().numpy()
-    m = np.mean(f_div_C, axis=0)
+    m = np.mean(W_y, axis=1)
     max_value = np.max(m)
     min_value = np.min(m)
     # max_value=0.5
@@ -82,10 +82,10 @@ def parse_one_ty(which_model=2):
 
     layers = pred.size(0)
     for i in range(layers):
-        attention = f_div_C[i]
+        attention = W_y[i]
         # w_i = np.abs(w_i)
-        # attention = attention.mean(axis=0)
-        sns.heatmap(attention.transpose(), cmap="Greys", vmax=max_value, vmin=min_value, annot=False)
+        attention = attention.mean(axis=0)
+        sns.heatmap(attention.transpose(), cmap="Greys", vmax=max_value, vmin=min_value, annot=True)
         name = '-'.join([str(times[i]), str(target[i])])
         # plt.show()
         dic = '/home/dl/data/TCIE/Attentions'

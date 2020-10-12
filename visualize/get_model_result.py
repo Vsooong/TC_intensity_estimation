@@ -106,7 +106,8 @@ def get_model(which=1):
     if which == 1:
         # 按照past window 分段
         # args.hidden_dim=128
-        model_name = 'MSFN_v1.pth'
+        # model_name = 'MSFN_v1.pth'
+        model_name='MSFN_v1_3.5_256.pth'
         model = MSFN_v1.get_MSFN_v1(True, model_name)
     else:
         # 全序列
@@ -120,7 +121,7 @@ def get_model(which=1):
 
 
 def main():
-    version=2
+    version=1
     model = get_model(version)
     dataset_test = TC_Data(years=[ 2017])
     # dataset_test = TC_Data(years=args.test_years)

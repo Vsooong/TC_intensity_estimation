@@ -11,7 +11,7 @@ import os
 Sea_Surface_Temperature = None
 
 
-def evaluate(model, dataset):
+def evaluate(model, dataset,version=1):
     evaluateL1 = nn.L1Loss(reduction='sum')
     evaluateL2 = nn.MSELoss(reduction='sum')
     model.eval()
@@ -20,23 +20,40 @@ def evaluate(model, dataset):
     total_loss2 = 0
     labels = []
     predicts = []
-
-    for minibatch in dataset.get_batches():
-        images, efactors, envsst, targets = minibatch
-        pred = model(images, efactors, envsst)
-        if np.isnan(pred.data.cpu()).sum() != 0:
-            print(efactors)
-            print(targets)
-            print(pred)
-        targets = targets[:, -1, :]
-        total_loss1 += evaluateL1(targets, pred).data.item()
-        total_loss2 += evaluateL2(targets, pred).data.item()
-        n_samples += len(targets)
-        for index in range(len(targets)):
-            labels.append(targets[index].data.item())
-            predicts.append(pred[index].data.item())
-    r = np.corrcoef(labels, predicts)[0][1]
-    return total_loss1 / n_samples, np.sqrt(total_loss2 / n_samples), r
+    if version==1:
+        for minibatch in dataset.get_batches():
+            images, efactors, envsst, targets = minibatch
+            pred = model(images, efactors, envsst)
+            if np.isnan(pred.data.cpu()).sum() != 0:
+                print(efactors)
+                print(targets)
+                print(pred)
+            targets = targets[:, -1, :]
+            total_loss1 += evaluateL1(targets, pred).data.item()
+            total_loss2 += evaluateL2(targets, pred).data.item()
+            n_samples += len(targets)
+            for index in range(len(targets)):
+                labels.append(targets[index].data.item())
+                predicts.append(pred[index].data.item())
+        r = np.corrcoef(labels, predicts)[0][1]
+        return total_loss1 / n_samples, np.sqrt(total_loss2 / n_samples), r
+    else:
+        for one_ty in dataset.get_one_ty():
+            images, efactors, envsst, targets = one_ty
+            pred = model(images, efactors, envsst).squeeze(-1)
+            targets = targets[0, :, :]
+            if np.isnan(pred.data.cpu()).sum() != 0:
+                print(efactors)
+                print(targets)
+                print(pred)
+            total_loss1 += evaluateL1(targets, pred).data.item()
+            total_loss2 += evaluateL2(targets, pred).data.item()
+            n_samples += len(targets)
+            for index in range(len(targets)):
+                labels.append(targets[index].data.item())
+                predicts.append(pred[index].data.item())
+        r = np.corrcoef(labels, predicts)[0][1]
+        return total_loss1 / n_samples, np.sqrt(total_loss2 / n_samples), r
 
 
 def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR', split=False):
@@ -103,12 +120,13 @@ def get_model(which=1):
 
 
 def main():
-    model = get_model(1)
-    dataset_test = TC_Data(years=[2000, 2006, 2011, 2017])
+    version=2
+    model = get_model(version)
+    dataset_test = TC_Data(years=[ 2017])
     # dataset_test = TC_Data(years=args.test_years)
     print('Test samples:', len(dataset_test.targets))
     print('------------------------------------------\n')
-    loss1, loss2, r = evaluate(model, dataset_test)
+    loss1, loss2, r = evaluate(model, dataset_test,version)
     print(loss1, loss2, r)
 
 

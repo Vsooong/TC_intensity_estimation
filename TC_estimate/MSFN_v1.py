@@ -17,7 +17,7 @@ class MSFNv1(nn.Module):
         self.encoder2 = encoder2
         self.encoder3 = encoder3
 
-        self.no_local = NONLocalBlock2D(n_hidden, inter_channels=n_hidden, sub_sample=False)
+        self.no_local = NONLocalBlock2D(n_hidden, inter_channels=n_hidden, sub_sample=True)
         self.pool1 = nn.AdaptiveMaxPool2d(output_size=(1, 1))
 
         self.projector = nn.Sequential(

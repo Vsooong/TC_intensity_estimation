@@ -4,7 +4,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-from visualize.get_model_result import estimate_one_ty, build_one_ty,get_model
+from visualize.get_model_result import estimate_one_ty, build_one_ty, get_model
 import os
 from utils.Utils import args
 
@@ -57,29 +57,35 @@ def min_times_number(a, b):
     return a * b / math.gcd(a, b)
 
 
-def parse_one_ty(which_model=1):
-    args.past_window = 3
+def parse_one_ty(which_model=2):
+    args.past_window =3
     if which_model == 1:
         X_im, X_ef, X_sst, target, times = build_one_ty(split=True)
         assert X_im.size(0) == len(times)
     else:
         X_im, X_ef, X_sst, target, times = build_one_ty(split=False)
-        target=target[0]
+        target = target[0]
         assert X_im.size(1) == len(times)
 
     model = get_model(which_model)
     pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
     print(W_y.shape)
     print(target.shape)
+    W_y = W_y.cpu().detach().numpy()
     target = target.cpu().detach().numpy()
-    # pred = pred.cpu().data
-    # W_y = np.abs(W_y.cpu().detach().numpy())
+
+    m = np.mean(W_y, axis=1)
+    max_value = np.max(m)+0.2
+    min_value = np.min(m)
+    # max_value=0.5
+    # min_value=0
+
     layers = pred.size(0)
     for i in range(layers):
-        w_i = W_y[i].cpu().detach().numpy()
+        w_i = W_y[i]
         w_i = np.abs(w_i)
         attention = w_i.mean(axis=0)
-        sns.heatmap(attention.transpose(), cmap="Greys", vmax=0.5, vmin=0.0, annot=True)
+        sns.heatmap(attention.transpose(), cmap="Greys", vmax=max_value, vmin=min_value, annot=True)
         name = '-'.join([str(times[i]), str(target[i])])
         # plt.show()
         path = os.path.join('D:/DATA/attentions/', f'{name}.jpg')

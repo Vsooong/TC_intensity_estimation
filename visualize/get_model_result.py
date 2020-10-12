@@ -2,12 +2,11 @@ from utils.Utils import args
 from TC_data import TC_Data
 import xarray
 import numpy as np
-from TC_estimate.MSFN import get_MSFN
-from TC_estimate.MSFN_v1 import get_MSFN_v1
 import torch.nn as nn
 from TC_data import getOneTyphoon
 import torch
 from TC_estimate import MSFN_v1, MSFN
+import os
 
 Sea_Surface_Temperature = None
 
@@ -41,6 +40,9 @@ def evaluate(model, dataset):
 
 
 def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR', split=False):
+    if not os.path.exists(ty):
+        ty = '/home/dl/data/TCIE/TC_IR_IMAGE/2015/201513_SOUDELOR'
+
     global Sea_Surface_Temperature
     if Sea_Surface_Temperature is None:
         Sea_Surface_Temperature = xarray.open_dataarray(args.sea_surface_temperature, cache=True)
@@ -86,10 +88,12 @@ def estimate_one_ty(X_im, X_ef, X_sst, model):
 def get_model(which=1):
     if which == 1:
         # 按照past window 分段
+        # args.hidden_dim=128
         model_name = 'MSFN_v1.pth'
         model = MSFN_v1.get_MSFN_v1(True, model_name)
     else:
         # 全序列
+        args.hidden_dim=256
         model_name = 'MSFN-5-4.8.pth'
         model = MSFN.get_MSFN(True, model_name)
     print('use model:', model_name)
@@ -100,7 +104,7 @@ def get_model(which=1):
 
 def main():
     model = get_model(1)
-    dataset_test = TC_Data(years=[2017])
+    dataset_test = TC_Data(years=[2000, 2006, 2011, 2017])
     # dataset_test = TC_Data(years=args.test_years)
     print('Test samples:', len(dataset_test.targets))
     print('------------------------------------------\n')

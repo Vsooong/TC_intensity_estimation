@@ -1,5 +1,5 @@
 import torch
-from single_frame_train import Criterion, evaluateL1, evaluateL2
+from single_frame_train import Criterion
 from utils.Utils import args
 from TC_data import TC_Data
 import os
@@ -9,7 +9,7 @@ from TC_estimate.MSFN_DC import get_MSFN_DC
 from TC_estimate.MSFN_GF import get_MSFN_GF
 from TC_estimate.MSFN import get_MSFN
 from TC_estimate.MSFN_v1 import get_MSFN_v1
-
+import torch.nn as nn
 
 # def train_one_epoch(model, dataset, optimizer, criterion):
 #     global which_model
@@ -79,9 +79,11 @@ def train_one_epoch(model, dataset, optimizer, criterion):
         # print(loss.item())
     return loss_epoch
 
-
 def evaluate(model, dataset):
+    evaluateL1 = nn.L1Loss(reduction='sum')
+    evaluateL2 = nn.MSELoss(reduction='sum')
     global which_model
+
     model.eval()
     n_samples = 0
     total_loss1 = 0
@@ -100,7 +102,6 @@ def evaluate(model, dataset):
             print(targets)
             print(pred)
         targets = targets[:, -1, :]
-
         total_loss1 += evaluateL1(targets, pred).data.item()
         total_loss2 += evaluateL2(targets, pred).data.item()
         n_samples += len(targets)

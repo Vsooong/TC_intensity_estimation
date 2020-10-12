@@ -58,7 +58,7 @@ def min_times_number(a, b):
 
 
 def parse_one_ty(which_model=2):
-    args.past_window =3
+    args.past_window = 3
     if which_model == 1:
         X_im, X_ef, X_sst, target, times = build_one_ty(split=True)
         assert X_im.size(0) == len(times)
@@ -73,9 +73,8 @@ def parse_one_ty(which_model=2):
     print(target.shape)
     W_y = W_y.cpu().detach().numpy()
     target = target.cpu().detach().numpy()
-
     m = np.mean(W_y, axis=1)
-    max_value = np.max(m)+0.2
+    max_value = np.max(m) + 0.2
     min_value = np.min(m)
     # max_value=0.5
     # min_value=0
@@ -88,7 +87,10 @@ def parse_one_ty(which_model=2):
         sns.heatmap(attention.transpose(), cmap="Greys", vmax=max_value, vmin=min_value, annot=True)
         name = '-'.join([str(times[i]), str(target[i])])
         # plt.show()
-        path = os.path.join('D:/DATA/attentions/', f'{name}.jpg')
+        dic = '/home/dl/data/TCIE/Attentions'
+        if not os.path.exists(dic):
+            dic = 'D:/DATA/attentions/'
+        path = os.path.join(dic, f'{name}.jpg')
         plt.savefig(path)
         plt.clf()
 

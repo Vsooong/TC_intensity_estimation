@@ -17,7 +17,7 @@ def cate_intensity(ints):
     return w
 
 def plot_hist():
-    lbs = np.load('F:/Python_Project/TC_intensity_prediction/Plots/label_ints.npy', allow_pickle=True).item()
+    lbs = np.load('data/label_ints.npy', allow_pickle=True).item()
     labels = flatten(lbs)
     labels=np.repeat(labels, 2)
     a4_dims = (8, 6)

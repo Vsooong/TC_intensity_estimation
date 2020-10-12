@@ -3,10 +3,11 @@ from TC_data import TC_Data
 import xarray
 import numpy as np
 from TC_estimate.MSFN import get_MSFN
+from TC_estimate.MSFN_v1 import get_MSFN_v1
 import torch.nn as nn
 from TC_data import getOneTyphoon
 import torch
-import os
+from TC_estimate import MSFN_v1, MSFN
 
 Sea_Surface_Temperature = None
 
@@ -69,7 +70,7 @@ def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR', split=False):
         return X_im, X_ef, X_sst, target[past_window - 1:], times[past_window - 1:]
 
     else:
-        images=images.unsqueeze(0).to(device)
+        images = images.unsqueeze(0).to(device)
         efactors = efactors.unsqueeze(0).to(device)
         env_sst = env_sst.unsqueeze(0).to(device)
         target = target.unsqueeze(0).to(device)
@@ -82,9 +83,15 @@ def estimate_one_ty(X_im, X_ef, X_sst, model):
     return pred, f_div_C, W_y
 
 
-def get_model():
-    model = get_MSFN(load_states=True)
-    model_name = 'MSFN.pth'
+def get_model(which=1):
+    if which == 1:
+        # 按照past window 分段
+        model_name = 'MSFN_v1.pth'
+        model = MSFN_v1.get_MSFN_v1(True, model_name)
+    else:
+        # 全序列
+        model_name = 'MSFN-5-4.8.pth'
+        model = MSFN.get_MSFN(True, model_name)
     print('use model:', model_name)
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
@@ -92,8 +99,8 @@ def get_model():
 
 
 def main():
-    model = get_model()
-    dataset_test = TC_Data(years=[2015])
+    model = get_model(1)
+    dataset_test = TC_Data(years=[2017])
     # dataset_test = TC_Data(years=args.test_years)
     print('Test samples:', len(dataset_test.targets))
     print('------------------------------------------\n')
@@ -102,14 +109,14 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
+    main()
     #
-    X_im, X_ef, X_sst, target, times = build_one_ty()
-    print(X_im.shape)
-    print(X_sst.shape)
-    print(target.shape)
-    model = get_model()
-    pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
-    print(pred.shape)
-    print(len(W_y))
-    print(len(times))
+    # X_im, X_ef, X_sst, target, times = build_one_ty()
+    # print(X_im.shape)
+    # print(X_sst.shape)
+    # print(target.shape)
+    # model = get_model()
+    # pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+    # print(pred.shape)
+    # print(len(W_y))
+    # print(len(times))

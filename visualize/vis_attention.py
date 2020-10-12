@@ -74,6 +74,8 @@ def parse_one_ty(which_model=1):
     W_y = W_y.cpu().detach().numpy()
     target = target.cpu().detach().numpy()
     f_div_C=f_div_C.cpu().detach().numpy()
+
+    W_y = np.abs(W_y)
     m = np.mean(W_y, axis=1)
     max_value = np.max(m)
     min_value = np.min(m)
@@ -83,7 +85,6 @@ def parse_one_ty(which_model=1):
     layers = pred.size(0)
     for i in range(layers):
         attention = W_y[i]
-        # w_i = np.abs(w_i)
         attention = attention.mean(axis=0)
         sns.heatmap(attention.transpose(), cmap="Greys", vmax=max_value, vmin=min_value, annot=True)
         name = '-'.join([str(times[i]), str(target[i])])

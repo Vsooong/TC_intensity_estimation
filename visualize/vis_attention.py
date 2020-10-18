@@ -3,10 +3,14 @@ import pandas
 import seaborn as sns
 from matplotlib import pyplot as plt
 import numpy as np
-from sklearn.metrics import mean_absolute_error, mean_squared_error
 from visualize.get_model_result import estimate_one_ty, build_one_ty, get_model
 import os
 from utils.Utils import args
+from global_land_mask import globe
+import matplotlib.dates as mdates
+
+sns.set_theme(color_codes=True)
+sns.set_style("whitegrid")
 
 
 def build_att(atts):
@@ -57,6 +61,92 @@ def min_times_number(a, b):
     return a * b / math.gcd(a, b)
 
 
+def is_on_land(points):
+    leng = len(points)
+    w = []
+    for index in range(leng):
+        [lat, lon] = points[index]
+        is_on = globe.is_land(lat, lon)
+        if is_on:
+            w.append(True)
+        else:
+            w.append(False)
+    return w
+
+
+def is_rapid_intensification(intensities):
+    w = []
+    for index, i in enumerate(intensities):
+        preindex = index - 8
+        if preindex < 0: w.append(False)
+        elif intensities[index] - intensities[preindex] >= 30 * 0.5144:
+            w.append(True)
+        else:
+            w.append(False)
+    return w
+
+
+def case_study_track():
+    X_im, X_ef, X_sst, target, times = build_one_ty(split=False)
+    assert X_im.size(1) == len(times)
+    model = get_model(2)
+    pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+    target = target.squeeze().cpu().detach().numpy()
+    pred = pred.squeeze().cpu().detach().numpy()
+    X_ef = X_ef.squeeze().cpu().detach().numpy()
+    points = np.array([[i[0], i[1] + 100] for i in X_ef])
+
+    lgt = len(target)
+    a = np.arange(0, lgt)
+    index = np.arange(0, lgt - 0.5, 0.5)
+    new_lat = np.interp(index, xp=a, fp=points[:, 0])
+    new_lon = np.interp(index, xp=a, fp=points[:, 1])
+    points = np.asarray([[new_lat[index], new_lon[index]] for index in range(len(new_lon))])
+    target = np.interp(index, xp=a, fp=target[:])
+    pred = np.interp(index, xp=a, fp=pred[:])
+
+    new_times = []
+    for i in times:
+        new_times.append(i)
+        hour = int(i[11:]) + 300
+        new_times.append('-'.join([i[0:10], str(hour).zfill(4)]))
+    new_times.__delitem__(-1)
+    times = new_times
+
+    times = pandas.to_datetime(pandas.Series(times))
+    # new_times = []
+    # for index, i in enumerate(times):
+    #     if index % 2 == 0 or index + 1 == len(times):
+    #         new_times.append(i)
+    d1 = {'UTC': times, 'Best track MSW': target}
+    d2 = {'UTC': times, 'Estimated intensities': pred}
+    data1 = pandas.DataFrame(d1)
+    data2 = pandas.DataFrame(d2)
+    data2 = data2.set_index('UTC')
+    fig, ax = plt.subplots(figsize=(18, 6))
+    ax.tick_params(axis='y', labelsize=20)  # y轴
+    ax.tick_params(axis='x', labelsize=15, rotation=45)  # y轴
+    # sns.lineplot(x='UTC',y='value',hue='variable',data=pandas.melt(data,['UTC']))
+    ax = sns.lineplot(data=data1, color='black', x='UTC', y='Best track MSW')
+    ax = sns.lineplot(data=data2, color='orangered', x='UTC', y='Estimated intensities')
+
+    ymin, ymax = 10, 75
+    on_land = is_on_land(points)
+    plt.fill_between(data2.index, y1=ymin, y2=ymax, where=on_land,
+                     color='skyblue', alpha=0.3)
+    is_RI= is_rapid_intensification(target)
+    plt.fill_between(data2.index, y1=ymin, y2=ymax, where=is_RI,
+                     color='coral', alpha=0.2)
+    plt.legend([], [], frameon=False)
+    ax.margins(x=0)
+    plt.ylim(ymin, ymax)
+    # plt.xticks(new_times)
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=1))
+    ax.xaxis.grid(False)
+    plt.show()
+
+
 def parse_one_ty(which_model=1):
     args.past_window = 3
     if which_model == 1:
@@ -73,7 +163,7 @@ def parse_one_ty(which_model=1):
     print(f_div_C.shape)
     W_y = W_y.cpu().detach().numpy()
     target = target.cpu().detach().numpy()
-    f_div_C=f_div_C.cpu().detach().numpy()
+    f_div_C = f_div_C.cpu().detach().numpy()
 
     # W_y = np.abs(W_y)
     m = np.mean(W_y, axis=1)
@@ -101,4 +191,7 @@ def parse_one_ty(which_model=1):
 
 
 if __name__ == '__main__':
-    parse_one_ty()
+    # parse_one_ty()
+    case_study_track()
+
+    pass

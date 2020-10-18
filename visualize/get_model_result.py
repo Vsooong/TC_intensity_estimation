@@ -105,8 +105,8 @@ def estimate_one_ty(X_im, X_ef, X_sst, model):
 def get_model(which=1):
     if which == 1:
         # 按照past window 分段
-        model_name = 'MSFN_v1.pth'
-        # model_name='MSFN_v1_3.5_256.pth'
+        # model_name = 'MSFN_v1.pth'
+        model_name='MSFN_v1_4.2_256.pth'
         model = MSFN_v1.get_MSFN_v1(True, model_name)
     else:
         # 全序列
@@ -119,9 +119,9 @@ def get_model(which=1):
 
 
 def main():
-    version=1
+    version=2
     model = get_model(version)
-    dataset_test = TC_Data(years=[ 2017])
+    dataset_test = TC_Data(years=[2005,2019, 2017])
     # dataset_test = TC_Data(years=args.test_years)
     print('Test samples:', len(dataset_test.targets))
     print('------------------------------------------\n')

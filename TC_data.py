@@ -226,7 +226,7 @@ def getOneTyphoon(dir, build_nc_seq=False, SST=None):
             im1 = Image.open(os.path.join(files[0], image)).convert("L")
             im1 = transform(im1)
             isi.append(im1)
-            times.append('-'.join(temp[:2]))
+            times.append('-'.join([cdate[:4], cdate[4:6], cdate[6:8],temp[1]]))
     mvts = torch.tensor(mvts)
     isi = torch.stack(isi, dim=0)
     ssts = torch.stack(ssts, dim=0)

@@ -23,17 +23,25 @@ def bias(label, pred):
     return np.sum(diff) / len(label)
 
 
-def flatten(dict):
+def flatten(dict, use_interp=False):
     res = []
     for k, v in dict.items():
-        res.append(v)
+        if use_interp:
+            lgt = len(v)
+            a = np.arange(0, lgt)
+            index = np.arange(0, lgt - 0.5, 0.5)
+            new_v = np.interp(index, xp=a, fp=v)
+            assert len(new_v) == 2 * lgt - 1
+            res.append(new_v)
+        else:
+            res.append(v)
     return np.concatenate(res, axis=0)
 
 
 def plot_hist():
     lbs = np.load('data/label_ints.npy', allow_pickle=True).item()
     labels = flatten(lbs)
-    labels = np.repeat(labels, 2)
+    # labels = np.repeat(labels, 2)
     a4_dims = (8, 6)
     sns.set_style("whitegrid")
     min_value, max_value = min(labels), max(labels)
@@ -112,6 +120,7 @@ def plot_error_with_value(labels, preds, min_value, max_value, intv, ymin=-2, ym
     w = cate_intensity(t)
     ax.fill_between(t, y1=ymin, y2=ymax, where=w,
                     color='grey', alpha=0.3)
+    plt.legend([], [], frameon=False)
     plt.show()
 
 

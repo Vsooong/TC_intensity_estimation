@@ -18,13 +18,13 @@ class MSFNv1(nn.Module):
         self.encoder3 = encoder3
 
         self.no_local = NONLocalBlock2D(n_hidden, inter_channels=n_hidden, sub_sample=True)
-        self.pool1 = nn.AdaptiveMaxPool2d(output_size=(1, 1))
+        # self.pool1 = nn.AdaptiveMaxPool2d(output_size=(1, 1))
         self.projector = nn.Sequential(
             # nn.Dropout(args.dropout),
-            nn.Linear(n_hidden, 1)
+            nn.Linear(n_hidden * args.past_window * 3, 1)
         )
 
-    def forward(self, x_1, x_2, x_3=None, return_nl_map=False):
+    def forward(self, x_1, x_2, x_3, return_nl_map=False):
         x_1 = x_1.transpose(0, 1).contiguous()
         state, output_1 = self.encoder1(x_1)
         out = output_1.permute(1, 2, 0).contiguous()
@@ -32,27 +32,24 @@ class MSFNv1(nn.Module):
         x_2 = x_2.transpose(0, 1).contiguous()
         output_2 = self.encoder2(x_2)
         out_2 = output_2.permute(1, 2, 0).contiguous()
-        if x_3 is not None:
-            x_3 = x_3.transpose(0, 1).contiguous()
-            state, output_3 = self.encoder3(x_3)
-            out_3 = output_3.permute(1, 2, 0).contiguous()
-            out = torch.stack([out, out_2, out_3], dim=3)
-        else:
-            out = torch.stack([out, out_2], dim=3)
+
+        x_3 = x_3.transpose(0, 1).contiguous()
+        state, output_3 = self.encoder3(x_3)
+        out_3 = output_3.permute(1, 2, 0).contiguous()
+        out = torch.stack([out, out_2, out_3], dim=3)
 
         # go through a relu function to make sure the feature maps are all positive
         out = torch.relu(out)
 
         if return_nl_map is True:
             out, f_div_C, W_y = self.no_local(out, return_nl_map=True)
-            out = self.pool1(out).squeeze()
+            out = torch.flatten(out,1)
             y = self.projector(out)
             return y, f_div_C, W_y
 
         else:
             out = self.no_local(out, return_nl_map=False)
-            out = self.pool1(out).squeeze()
-
+            out = torch.flatten(out,1)
             y = self.projector(out)
             return y
 

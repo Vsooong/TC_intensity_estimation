@@ -78,7 +78,8 @@ def is_rapid_intensification(intensities):
     w = []
     for index, i in enumerate(intensities):
         preindex = index - 8
-        if preindex < 0: w.append(False)
+        if preindex < 0:
+            w.append(False)
         elif intensities[index] - intensities[preindex] >= 30 * 0.5144:
             w.append(True)
         else:
@@ -86,11 +87,7 @@ def is_rapid_intensification(intensities):
     return w
 
 
-def case_study_track():
-    X_im, X_ef, X_sst, target, times = build_one_ty(split=False)
-    assert X_im.size(1) == len(times)
-    model = get_model(2)
-    pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+def plot_track(X_ef, target, pred, times):
     target = target.squeeze().cpu().detach().numpy()
     pred = pred.squeeze().cpu().detach().numpy()
     X_ef = X_ef.squeeze().cpu().detach().numpy()
@@ -134,7 +131,7 @@ def case_study_track():
     on_land = is_on_land(points)
     plt.fill_between(data2.index, y1=ymin, y2=ymax, where=on_land,
                      color='skyblue', alpha=0.3)
-    is_RI= is_rapid_intensification(target)
+    is_RI = is_rapid_intensification(target)
     plt.fill_between(data2.index, y1=ymin, y2=ymax, where=is_RI,
                      color='coral', alpha=0.2)
     plt.legend([], [], frameon=False)
@@ -149,18 +146,24 @@ def case_study_track():
 
 def parse_one_ty(which_model=1):
     args.past_window = 3
+    model = get_model(which_model)
     if which_model == 1:
         X_im, X_ef, X_sst, target, times = build_one_ty(split=True)
         assert X_im.size(0) == len(times)
+        pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+        X_ef = X_ef[:, -1, :]
     else:
         X_im, X_ef, X_sst, target, times = build_one_ty(split=False)
-        target = target[0]
         assert X_im.size(1) == len(times)
+        pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+        target = target[0]
 
-    model = get_model(which_model)
-    pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
-    print(W_y.shape)
-    print(f_div_C.shape)
+    # print(X_ef.shape)
+    # print(target.shape)
+    # print(pred.shape)
+
+    plot_track(X_ef,target,pred,times)
+
     W_y = W_y.cpu().detach().numpy()
     target = target.cpu().detach().numpy()
     f_div_C = f_div_C.cpu().detach().numpy()
@@ -191,7 +194,5 @@ def parse_one_ty(which_model=1):
 
 
 if __name__ == '__main__':
-    # parse_one_ty()
-    case_study_track()
-
+    parse_one_ty()
     pass

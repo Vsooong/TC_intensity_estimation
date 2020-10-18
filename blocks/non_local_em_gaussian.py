@@ -93,10 +93,11 @@ class _NonLocalBlockND(nn.Module):
         W_y = self.W(y)
         # print(W_y.shape)
 
-        z = W_y + x
+        # z = W_y + x
+        z = W_y
 
         if return_nl_map:
-            return z, f_div_C, z
+            return z, f_div_C, W_y
         return z
 
 

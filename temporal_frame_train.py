@@ -135,10 +135,10 @@ def main(train_process=False, load_states=False):
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
     # dataset = TC_Data(years=[2006])
-    test_years = [2000, 2006, 2011, 2017]
-    dataset_test = TC_Data(years=test_years)
+    # test_years = [2000, 2006, 2011, 2017]
+    # dataset_test = TC_Data(years=test_years)
     dataset = TC_Data()
-    # dataset_test = TC_Data(years=args.test_years)
+    dataset_test = TC_Data(years=args.test_years)
     print('Training samples:', len(dataset.targets))
     print('Test samples:', len(dataset_test.targets))
     print('----------------------------------------------')

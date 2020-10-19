@@ -97,7 +97,7 @@ class _NonLocalBlockND(nn.Module):
         # z = W_y
 
         if return_nl_map:
-            return z, f_div_C, W_y
+            return z, f_div_C, z
         return z
 
 

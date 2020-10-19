@@ -9,6 +9,7 @@ from TC_estimate.MSFN_DC import EF_LSTM
 import time
 from blocks.non_local_em_gaussian import NONLocalBlock2D, NONLocalBlock1D
 
+
 class MSFNv1(nn.Module):
     def __init__(self, encoder1, encoder2, encoder3, n_hidden=args.hidden_dim):
         super(MSFNv1, self).__init__()
@@ -17,10 +18,11 @@ class MSFNv1(nn.Module):
         self.encoder3 = encoder3
 
         self.no_local = NONLocalBlock2D(n_hidden, inter_channels=n_hidden, sub_sample=True)
-        # self.pool1 = nn.AdaptiveMaxPool2d(output_size=(1, 1))
+        self.pool = nn.AdaptiveMaxPool2d(output_size=(1, 1))
         self.projector = nn.Sequential(
+            # nn.Linear(n_hidden, n_hidden, bias=False),
             nn.Dropout(args.dropout),
-            nn.Linear(n_hidden * args.past_window * 3, 1)
+            nn.Linear(n_hidden, 1)
         )
 
     def forward(self, x_1, x_2, x_3, return_nl_map=False):
@@ -38,19 +40,22 @@ class MSFNv1(nn.Module):
         out = torch.stack([out, out_2, out_3], dim=3)
 
         # use a leaky_relu function to force the feature maps being positive
-        out = F.leaky_relu(out,negative_slope=0.1)
+        out = F.leaky_relu(out, negative_slope=0.1)
 
+        f_div_C = None
+        W_y = None
         if return_nl_map is True:
             out, f_div_C, W_y = self.no_local(out, return_nl_map=True)
-            out = torch.flatten(out,1)
-            y = self.projector(out)
-            return y, f_div_C, W_y
-
         else:
             out = self.no_local(out, return_nl_map=False)
-            out = torch.flatten(out,1)
-            y = self.projector(out)
+        out = torch.relu(out)
+        # out = torch.flatten(out, 1)
+        out = self.pool(out).squeeze()
+        y = self.projector(out)
+        if W_y is None:
             return y
+        else:
+            return y, f_div_C, W_y
 
 
 def get_MSFN_v1(load_states=False, model_name='MSFN_v1.pth'):
@@ -73,7 +78,7 @@ if __name__ == '__main__':
     input2 = torch.rand(4, 3, 10).to(args.device)
     input3 = torch.rand(4, 3, 1, 60, 60).to(args.device)
 
-    model = get_MSFN_v1(load_states=True)
+    model = get_MSFN_v1(load_states=False)
     nParams = sum([p.nelement() for p in model.parameters()])
     print('number of parameters: %d' % nParams)
     start = time.time()

@@ -8,8 +8,9 @@ import os
 from utils.Utils import args
 from global_land_mask import globe
 import matplotlib.dates as mdates
+from pandas.plotting import register_matplotlib_converters
 
-sns.set_theme(color_codes=True)
+register_matplotlib_converters()
 sns.set_style("whitegrid")
 
 
@@ -88,10 +89,10 @@ def is_rapid_intensification(intensities):
 
 
 def plot_track(X_ef, target, pred, times):
-    target = target.squeeze().cpu().detach().numpy()
-    pred = pred.squeeze().cpu().detach().numpy()
+    target = target.squeeze().cpu().detach().numpy() * 10
+    pred = pred.squeeze().cpu().detach().numpy() * 10
     X_ef = X_ef.squeeze().cpu().detach().numpy()
-    points = np.array([[i[0], i[1] + 100] for i in X_ef])
+    points = np.array([[i[0] * 50, i[1] * 80 + 100] for i in X_ef])
 
     lgt = len(target)
     a = np.arange(0, lgt)
@@ -117,9 +118,9 @@ def plot_track(X_ef, target, pred, times):
     #         new_times.append(i)
     d1 = {'UTC': times, 'Best track MSW': target}
     d2 = {'UTC': times, 'Estimated intensities': pred}
-    data1 = pandas.DataFrame(d1)
-    data2 = pandas.DataFrame(d2)
-    data2 = data2.set_index('UTC')
+    data1 = pandas.Series(d1)
+    data2 = pandas.Series(d2)
+    # data2 = data2.set_index('UTC')
     fig, ax = plt.subplots(figsize=(18, 6))
     ax.tick_params(axis='y', labelsize=20)  # y轴
     ax.tick_params(axis='x', labelsize=15, rotation=45)  # y轴
@@ -129,10 +130,10 @@ def plot_track(X_ef, target, pred, times):
 
     ymin, ymax = 10, 75
     on_land = is_on_land(points)
-    plt.fill_between(data2.index, y1=ymin, y2=ymax, where=on_land,
+    plt.fill_between(data2['UTC'].values, y1=ymin, y2=ymax, where=on_land,
                      color='skyblue', alpha=0.3)
     is_RI = is_rapid_intensification(target)
-    plt.fill_between(data2.index, y1=ymin, y2=ymax, where=is_RI,
+    plt.fill_between(data2['UTC'].values, y1=ymin, y2=ymax, where=is_RI,
                      color='coral', alpha=0.2)
     plt.legend([], [], frameon=False)
     ax.margins(x=0)
@@ -162,7 +163,7 @@ def parse_one_ty(which_model=1):
     # print(target.shape)
     # print(pred.shape)
 
-    plot_track(X_ef,target,pred,times)
+    plot_track(X_ef, target, pred, times)
 
     W_y = W_y.cpu().detach().numpy()
     target = target.cpu().detach().numpy()

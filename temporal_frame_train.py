@@ -159,7 +159,7 @@ def main(train_process=False, load_states=False):
                     path = os.path.join(args.save_model, model_name)
                     torch.save(model.state_dict(), path)
                     print('test performance improved, save model to:', path)
-                if loss2 < 4.8:
+                if loss2 < 0.48:
                     break
 
             loss_epoch = train_one_epoch(model, dataset, optimizer, criterion)

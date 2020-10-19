@@ -11,7 +11,7 @@ import os
 Sea_Surface_Temperature = None
 
 
-def evaluate(model, dataset,version=1):
+def evaluate(model, dataset, version=1):
     evaluateL1 = nn.L1Loss(reduction='sum')
     evaluateL2 = nn.MSELoss(reduction='sum')
     model.eval()
@@ -20,7 +20,7 @@ def evaluate(model, dataset,version=1):
     total_loss2 = 0
     labels = []
     predicts = []
-    if version==1:
+    if version == 1:
         for minibatch in dataset.get_batches():
             images, efactors, envsst, targets = minibatch
             pred = model(images, efactors, envsst)
@@ -106,7 +106,7 @@ def get_model(which=1):
     if which == 1:
         # 按照past window 分段
         # model_name = 'MSFN_v1.pth'
-        model_name='MSFN_v1.pth'
+        model_name = 'MSFN_v1.pth'
         model = MSFN_v1.get_MSFN_v1(True, model_name)
     else:
         # 全序列
@@ -119,13 +119,13 @@ def get_model(which=1):
 
 
 def main():
-    version=2
+    version = 1
     model = get_model(version)
-    dataset_test = TC_Data(years=[2005,2019, 2017])
+    dataset_test = TC_Data(years=[2000, 2005, 2010, 2015, 2019])
     # dataset_test = TC_Data(years=args.test_years)
     print('Test samples:', len(dataset_test.targets))
     print('------------------------------------------\n')
-    loss1, loss2, r = evaluate(model, dataset_test,version)
+    loss1, loss2, r = evaluate(model, dataset_test, version)
     print(loss1, loss2, r)
 
 

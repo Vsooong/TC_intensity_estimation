@@ -106,7 +106,7 @@ def get_model(which=1):
     if which == 1:
         # 按照past window 分段
         # model_name = 'MSFN_v1.pth'
-        model_name='MSFN_v1_4.2_256.pth'
+        model_name='MSFN_v1.pth'
         model = MSFN_v1.get_MSFN_v1(True, model_name)
     else:
         # 全序列

@@ -143,7 +143,7 @@ def main(train_process=False, load_states=False):
     print('Test samples:', len(dataset_test.targets))
     print('----------------------------------------------')
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.AdamW(params, lr=0.001)
+    optimizer = torch.optim.AdamW(params, lr=0.002)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                    step_size=5,
                                                    gamma=0.8)

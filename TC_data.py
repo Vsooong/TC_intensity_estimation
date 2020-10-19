@@ -186,21 +186,25 @@ def getOneTyphoon(dir, build_nc_seq=False, SST=None):
             centra_sst = float(temp[6])
             mpi = float(temp[7])
             rh600 = float(temp[8])
-            t200 = float(temp[9])
-            slr200 = float(temp[10])
+            if np.isnan(rh600):
+                rh600 = 0
+            t200 = 273.16 - float(temp[9])
+            if np.isnan(t200):
+                t200 = 40
+            slr200 = float(temp[10]) / 10
             if np.isnan(slr200):
-                slr200 = 0
-            slr800 = float(temp[11])
+                slr200 = 1
+            slr800 = float(temp[11]) / 10
             if np.isnan(slr800):
-                slr800 = 0
+                slr800 = 1
+
             # pres = float(temp[-2])
             if lat > 50 or lat < 0 or lon > 180 or lon < 100:
                 continue
 
-            record = [lat, lon - 100, stp, jdate / 10, centra_sst, mpi, rh600, t200 - 273.16, slr200, slr800,
-                      ori_intense]
+            record = [lat / 50, (lon - 100) / 80, stp / 100, jdate / 300, centra_sst / 30, mpi / 70, rh600 / 90,
+                      (t200 - 40) / 15, slr200, slr800, ori_intense / 10]
             mvts.append(record)
-            # mvts.append([ori_intense])
             # if np.isnan(record).sum() != 0: print()
             if build_nc_seq:
                 sst_background = np.zeros(shape=(args.sst_size, args.sst_size))
@@ -213,7 +217,7 @@ def getOneTyphoon(dir, build_nc_seq=False, SST=None):
                 rows1, rows2, cols1, cols2 = relative_coord(lat1, lon1, lat2, lon2)
                 sst = SST[time, rows1:rows2 + 1, cols1:cols2 + 1]
                 rows1, rows2, cols1, cols2 = relative_coord(0, 100, 50, 180, lat1, lon1, lat2, lon2)
-                sst_background[rows1:rows2 + 1, cols1:cols2 + 1] = sst.data - 273.16
+                sst_background[rows1:rows2 + 1, cols1:cols2 + 1] = (sst.data - 273.16)/30
                 sst_background[np.isnan(sst_background)] = 0
                 sst_record = torch.as_tensor(sst_background, dtype=torch.float).unsqueeze(0)
                 ssts.append(sst_record)
@@ -226,7 +230,7 @@ def getOneTyphoon(dir, build_nc_seq=False, SST=None):
             im1 = Image.open(os.path.join(files[0], image)).convert("L")
             im1 = transform(im1)
             isi.append(im1)
-            times.append('-'.join([cdate[:4], cdate[4:6], cdate[6:8],temp[1]]))
+            times.append('-'.join([cdate[:4], cdate[4:6], cdate[6:8], temp[1]]))
     mvts = torch.tensor(mvts)
     isi = torch.stack(isi, dim=0)
     ssts = torch.stack(ssts, dim=0)
@@ -243,7 +247,7 @@ if __name__ == '__main__':
     tc_data = TC_Data(years=[2000])
     for one_ty in tc_data.get_one_ty():
         images, efactors, envsst, targets = one_ty
-    #     #     targets = targets[:, -1, :]
+        #     #     targets = targets[:, -1, :]
         print(envsst.shape)
         print(efactors.shape)
         print(targets.shape)

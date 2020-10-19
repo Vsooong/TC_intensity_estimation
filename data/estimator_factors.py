@@ -156,32 +156,79 @@ def label_one_typhoon(dir):
         print(os.path.join(files[0], new_name))
 
 
+def init_years(data_root=args.img_root, years=args.train_years):
+    typhoon_list = []
+    for i in sorted(os.listdir(data_root), reverse=False):
+        if os.path.isdir(os.path.join(data_root, i)):
+            ip = os.path.join(data_root, i)
+            for j in sorted(os.listdir(ip)):
+                jp = os.path.join(ip, j)
+                if years and int(i) in years:
+                    typhoon_list.append(jp)
+    return typhoon_list
+
+
 def label_ef_to_images():
-    def init_years(data_root=args.img_root, years=args.train_years):
-        typhoon_list = []
-
-        for i in sorted(os.listdir(data_root), reverse=False):
-            if os.path.isdir(os.path.join(data_root, i)):
-                ip = os.path.join(data_root, i)
-                for j in sorted(os.listdir(ip)):
-                    jp = os.path.join(ip, j)
-                    if years and int(i) in years:
-                        typhoon_list.append(jp)
-        return typhoon_list
-
     typhoons = init_years()
     for ty in typhoons:
         label_one_typhoon(ty)
 
+
+def summary_ef():
+    import seaborn as sns
+    typhoons = init_years()
+    values = []
+    for dir in typhoons:
+        files = sorted([os.path.join(dir, i) for i in os.listdir(dir)])
+        channel1 = sorted(os.listdir(files[0]))
+        select_images = []
+        for image_name in channel1:
+            if image_name.endswith('jpg'):
+                temp = image_name.split('-')
+                if str(temp[1]) in args.time_spot:
+                    select_images.append(image_name)
+        nums = len(select_images)
+        for index in range(nums):
+            image = select_images[index]
+            temp = image.split('-')
+            cdate = temp[0]
+            hour = temp[1]
+            lat = float(temp[2])
+            lon = float(temp[3])
+            stp = float(temp[4])
+            jdate = float(temp[5])
+            centra_sst = float(temp[6])
+            mpi = float(temp[7])
+            rh600 = float(temp[8])
+            if np.isnan(rh600):
+                rh600 = 0
+            t200 = 273.16 - float(temp[9])
+            if np.isnan(t200):
+                t200 = 40
+            slr200 = float(temp[10]) / 10
+            if np.isnan(slr200):
+                slr200 = 1
+            slr800 = float(temp[11]) / 10
+            if np.isnan(slr800):
+                slr800 = 1
+
+            if lat > 50 or lat < 0 or lon > 180 or lon < 100:
+                continue
+            values.append(slr800)
+
+    values = np.asarray(values)
+    print(values.max(), values.min(), values.mean(), values.std())
+    sns.displot(x=values)
+    plt.show()
+
+
 if __name__ == '__main__':
-
-    sst = xarray.open_dataarray('/home/dl/data/TCIE/mcs/sst2000-2019.nc', cache=True) - 273.16
-    rh = xarray.open_dataarray('/home/dl/data/TCIE/mcs/rh2000-2019.nc', cache=True)
-    tmp = xarray.open_dataarray('/home/dl/data/TCIE/mcs/tmp2000-2019.nc', cache=True)
-
-    # max_lat = max(sst.coords['latitude'].data)
-    # min_lon = min(sst.coords['longitude'].data)
-    label_ef_to_images()
+    # sst = xarray.open_dataarray('/home/dl/data/TCIE/mcs/sst2000-2019.nc', cache=True) - 273.16
+    # rh = xarray.open_dataarray('/home/dl/data/TCIE/mcs/rh2000-2019.nc', cache=True)
+    # tmp = xarray.open_dataarray('/home/dl/data/TCIE/mcs/tmp2000-2019.nc', cache=True)
+    # label_ef_to_images()
+    summary_ef()
+    pass
 
 # start=TM.time()
 # values = select_area_nc(time=10923, clat=20, clon=120, radius1=200, radius2=800, nc_file=sst, max_lat=max_lat,
@@ -190,7 +237,8 @@ if __name__ == '__main__':
 # print(end-start)
 # print(values)
 
-
+# max_lat = max(sst.coords['latitude'].data)
+# min_lon = min(sst.coords['longitude'].data)
 # file1 = '/home/dl/data/TCIE/mcs/sst-1.nc'
 # file2 = '/home/dl/data/TCIE/mcs/sst.nc'
 #

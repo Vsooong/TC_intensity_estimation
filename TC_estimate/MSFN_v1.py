@@ -9,7 +9,6 @@ from TC_estimate.MSFN_DC import EF_LSTM
 import time
 from blocks.non_local_em_gaussian import NONLocalBlock2D, NONLocalBlock1D
 
-
 class MSFNv1(nn.Module):
     def __init__(self, encoder1, encoder2, encoder3, n_hidden=args.hidden_dim):
         super(MSFNv1, self).__init__()
@@ -20,7 +19,7 @@ class MSFNv1(nn.Module):
         self.no_local = NONLocalBlock2D(n_hidden, inter_channels=n_hidden, sub_sample=True)
         # self.pool1 = nn.AdaptiveMaxPool2d(output_size=(1, 1))
         self.projector = nn.Sequential(
-            # nn.Dropout(args.dropout),
+            nn.Dropout(args.dropout),
             nn.Linear(n_hidden * args.past_window * 3, 1)
         )
 
@@ -38,8 +37,8 @@ class MSFNv1(nn.Module):
         out_3 = output_3.permute(1, 2, 0).contiguous()
         out = torch.stack([out, out_2, out_3], dim=3)
 
-        # go through a relu function to make sure the feature maps are all positive
-        out = torch.relu(out)
+        # use a leaky_relu function to force the feature maps being positive
+        out = F.leaky_relu(out,negative_slope=0.1)
 
         if return_nl_map is True:
             out, f_div_C, W_y = self.no_local(out, return_nl_map=True)

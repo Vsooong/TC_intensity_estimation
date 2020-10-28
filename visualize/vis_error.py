@@ -40,29 +40,29 @@ def cls_intensity(ints):
     return w
 
 
-def error_for_categories(label=None, estimation=None,test_years=None):
+def error_for_categories(label=None, estimation=None, test_years=None):
     if label is None or estimation is None:
         label = np.load('data/label_ints.npy', allow_pickle=True).item()
         estimation = np.load('data/estim_ints.npy', allow_pickle=True).item()
     if test_years is not None:
-        new_label={}
-        new_estim={}
-        for k,v in label.items():
+        new_label = {}
+        new_estim = {}
+        for k, v in label.items():
             if int(k[:4]) in test_years:
-                new_label[k]=v
-        for k,v in estimation.items():
+                new_label[k] = v
+        for k, v in estimation.items():
             if int(k[:4]) in test_years:
-                new_estim[k]=v
-        label=new_label
-        estimation=new_estim
-    label = flatten(label,True)
-    estimation = flatten(estimation,True)
+                new_estim[k] = v
+        label = new_label
+        estimation = new_estim
+    label = flatten(label, True)
+    estimation = flatten(estimation, True)
     mae = mean_absolute_error(label, estimation)
     rmse = np.sqrt(mean_squared_error(label, estimation))
     diff = bias(label, estimation)
     bia = np.sum(diff) / len(label)
     mape = mean_absolute_percentage_error(label, estimation)
-    print(rmse,mae,bia,mape)
+    print(rmse, mae, bia, mape)
 
     metric_table = {}
     for index in range(len(label)):
@@ -80,8 +80,9 @@ def error_for_categories(label=None, estimation=None,test_years=None):
         diff = bias(lbs, pds)
         bia = np.sum(diff) / len(lbs)
         mape = mean_absolute_percentage_error(lbs, pds)
-        median=np.median(diff)
-        print(key,len(lbs), rmse, mae, bia,median, mape)
+        median = np.median(diff)
+        print(key, len(lbs), rmse, mae, bia, median, mape)
+
 
 def linear_fit(label=None, estimation=None):
     if label is None or estimation is None:
@@ -104,10 +105,10 @@ def plot_box(label=None, estimation=None):
     estimation = flatten(estimation, use_interp=False)
     index = [cls_intensity(i) for i in label]
     fig, ax = plt.subplots(figsize=(8, 6))
-    sns.boxplot(x=index, y=bias(label, estimation),showmeans=True,meanprops={"marker":"o",
-                       "markerfacecolor":"white",
-                       "markeredgecolor":"black",
-                      "markersize":"8"})
+    sns.boxplot(x=index, y=bias(label, estimation), showmeans=True, meanprops={"marker": "o",
+                                                                               "markerfacecolor": "white",
+                                                                               "markeredgecolor": "black",
+                                                                               "markersize": "8"})
     ax.tick_params(axis='y', labelsize=20)  # y轴
     ax.tick_params(axis='x', labelsize=20)  # y轴
     plt.show()
@@ -149,10 +150,12 @@ def get_estimation(data_file='F:/data/TC_IR_IMAGE/', which=1):
         print(path)
         if which == 1:
             X_im, X_ef, X_sst, target, times = build_one_ty(path, split=True)
+            assert X_im.size(0) == len(times)
         else:
             X_im, X_ef, X_sst, target, times = build_one_ty(path, split=False)
+            assert X_im.size(1) == len(times)
             target = target[0]
-        pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+        pred, f_div_C, W_y = model(X_im, X_ef, X_sst, return_nl_map=True)
         pred = pred.squeeze().cpu().detach().numpy()
         target = target.squeeze().cpu().detach().numpy()
         assert len(pred) == len(target)
@@ -171,12 +174,31 @@ def get_estimation(data_file='F:/data/TC_IR_IMAGE/', which=1):
     # return labels
 
 
+# generate_estimation()
+def get_metrics(labels, predict):
+    mse = mean_squared_error(labels, predict)
+    mae = mean_absolute_error(labels, predict)
+    return np.sqrt(mse), mae, bias(labels, predict)
+
+
+def metrics_every_year(labels, predict, years=2016):
+    _result1 = []
+    _result2 = []
+    for k, v in labels.items():
+        if int(k[:4]) == years:
+            _result1.append(v)
+            _result2.append(predict[k])
+    res1 = np.concatenate(_result1, axis=0)
+    res2 = np.concatenate(_result2, axis=0)
+    return get_metrics(res1, res2)
+
+
 if __name__ == '__main__':
     # labels, predictions = get_estimation(which=2)
     # plot_scattor()
     # linear_fit()
     # plot_curve()
     # plot_box()
-    error_for_categories(test_years=[2016,2017,2018,2019])
+    error_for_categories(test_years=[2016, 2017, 2018, 2019])
 
     pass

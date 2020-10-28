@@ -23,6 +23,7 @@ def evaluate(model, dataset, version=1):
     if version == 1:
         for minibatch in dataset.get_batches():
             images, efactors, envsst, targets = minibatch
+            # print(images.shape,efactors.shape)
             pred = model(images, efactors, envsst)
             if np.isnan(pred.data.cpu()).sum() != 0:
                 print(efactors)
@@ -96,17 +97,11 @@ def build_one_ty(ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR', split=False):
         return images, efactors, env_sst, target, times
 
 
-def estimate_one_ty(X_im, X_ef, X_sst, model):
-    model.eval()
-    pred, f_div_C, W_y = model(X_im, X_ef, X_sst, return_nl_map=True)
-    return pred, f_div_C, W_y
-
-
 def get_model(which=1):
     if which == 1:
         # 按照past window 分段
-        # model_name = 'MSFN_v1.pth'
         model_name = 'MSFN_v1.pth'
+        # model_name = 'MSFN_v1.2.9.pth'
         model = MSFN_v1.get_MSFN_v1(True, model_name)
     else:
         # 全序列
@@ -119,9 +114,9 @@ def get_model(which=1):
 
 
 def main():
-    version = 1
+    version = 2
     model = get_model(version)
-    dataset_test = TC_Data(years=[2000, 2005, 2010, 2015, 2019])
+    dataset_test = TC_Data(years=[2005, 2010, 2017])
     # dataset_test = TC_Data(years=args.test_years)
     print('Test samples:', len(dataset_test.targets))
     print('------------------------------------------\n')

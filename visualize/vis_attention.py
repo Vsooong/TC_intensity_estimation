@@ -3,12 +3,13 @@ import pandas
 import seaborn as sns
 from matplotlib import pyplot as plt
 import numpy as np
-from visualize.get_model_result import estimate_one_ty, build_one_ty, get_model
+from visualize.get_model_result import build_one_ty, get_model
 import os
 from utils.Utils import args
 from global_land_mask import globe
 import matplotlib.dates as mdates
 from pandas.plotting import register_matplotlib_converters
+import torch
 
 register_matplotlib_converters()
 sns.set_style("whitegrid")
@@ -145,47 +146,64 @@ def plot_track(X_ef, target, pred, times):
     plt.show()
 
 
-def parse_one_ty(which_model=1):
-    args.past_window = 3
+def parse_one_ty(which_model=1,ty='F:/data/TC_IR_IMAGE/2015/201513_SOUDELOR'):
+    args.past_window = 5
     model = get_model(which_model)
+    model.eval()
     if which_model == 1:
-        X_im, X_ef, X_sst, target, times = build_one_ty(split=True)
+        X_im, X_ef, X_sst, target, times = build_one_ty(ty,split=True)
         assert X_im.size(0) == len(times)
-        pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+        pred, f_div_C, W_y = model(X_im, X_ef, X_sst, return_nl_map=True)
         X_ef = X_ef[:, -1, :]
     else:
-        X_im, X_ef, X_sst, target, times = build_one_ty(split=False)
+        X_im, X_ef, X_sst, target, times = build_one_ty(ty,split=False)
         assert X_im.size(1) == len(times)
-        pred, f_div_C, W_y = estimate_one_ty(X_im, X_ef, X_sst, model)
+        pred, f_div_C, W_y = model(X_im, X_ef, X_sst, return_nl_map=True)
         target = target[0]
 
-    # print(X_ef.shape)
-    # print(target.shape)
-    # print(pred.shape)
-
     plot_track(X_ef, target, pred, times)
-
     W_y = W_y.cpu().detach().numpy()
     target = target.cpu().detach().numpy()
     f_div_C = f_div_C.cpu().detach().numpy()
 
     # W_y = np.abs(W_y)
+
     m = np.mean(W_y, axis=1)
     max_value = np.max(m)
     min_value = np.min(m)
     # max_value=0.5
     # min_value=0
 
-    layers = pred.size(0)
-    for i in range(layers):
-        attention = W_y[i]
-        attention = attention.mean(axis=0)
-        sns.heatmap(attention.transpose(), cmap="Greys", vmax=max_value, vmin=min_value, annot=True)
-        name = '-'.join([str(times[i]), str(target[i])])
+    points = pred.size(0)
+    length = args.past_window
+    for point in range(points):
+        attention = W_y[point]
+        attention = attention.mean(axis=0).transpose()
+        assert np.shape(attention) == (3, length)
+
+        if args.past_window != 5:
+            new_attention = []
+            for one_view in attention:
+                a = np.arange(0, length)
+                index = np.arange(0, length - 0.5, 0.5)
+                new_atts = np.interp(index, xp=a, fp=one_view)
+                new_attention.append(new_atts)
+            attention = new_attention
+        xlabels = [f't-{length - t}' if t != length else f't' for t in range(1, length + 1)]
+        ylabels = [f'{m}' for m in range(1, 4)]
+        fig, ax = plt.subplots(figsize=(9, 4))
+        sns.heatmap(attention, cmap="Greys", vmax=max_value, vmin=0, xticklabels=xlabels,
+                    yticklabels=ylabels, annot=False)
+        name = '-'.join([str(times[point]), str(target[point])])
+        ax.tick_params(axis='y', labelsize=20)  # y轴
+        ax.tick_params(axis='x', labelsize=20)  # y轴
         # plt.show()
+        # ax.xaxis.set_visible(False)
+        # ax.yaxis.set_visible(False)
+        plt.tight_layout()
         dic = '/home/dl/data/TCIE/Attentions'
         if not os.path.exists(dic):
-            dic = 'D:/DATA/attentions/'
+            dic = 'D:/DATA/attentions3/'
         path = os.path.join(dic, f'{name}.jpg')
         plt.savefig(path)
         plt.clf()
@@ -195,5 +213,8 @@ def parse_one_ty(which_model=1):
 
 
 if __name__ == '__main__':
-    parse_one_ty()
+    version = 1
+    # parse_one_ty(version,ty='F:/data/TC_IR_IMAGE/2018/201805_MALIKSI')
+    sns.heatmap(np.random.rand(3,5), cmap="Greys", vmax=1, vmin=0)
+    plt.show()
     pass

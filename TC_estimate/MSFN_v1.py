@@ -9,6 +9,49 @@ from TC_estimate.MSFN_DC import EF_LSTM
 import time
 from blocks.non_local_em_gaussian import NONLocalBlock2D, NONLocalBlock1D
 
+# class MSFNv1(nn.Module):
+#     def __init__(self, encoder1, encoder2, encoder3, n_hidden=args.hidden_dim):
+#         super(MSFNv1, self).__init__()
+#         self.encoder1 = encoder1
+#         self.encoder2 = encoder2
+#         self.encoder3 = encoder3
+#
+#         self.no_local = NONLocalBlock2D(n_hidden, inter_channels=n_hidden, sub_sample=True)
+#         # self.pool1 = nn.AdaptiveMaxPool2d(output_size=(1, 1))
+#         self.projector = nn.Sequential(
+#             nn.Dropout(args.dropout),
+#             nn.Linear(n_hidden * args.past_window * 3, 1)
+#         )
+#
+#     def forward(self, x_1, x_2, x_3, return_nl_map=False):
+#         x_1 = x_1.transpose(0, 1).contiguous()
+#         state, output_1 = self.encoder1(x_1)
+#         out = output_1.permute(1, 2, 0).contiguous()
+#
+#         x_2 = x_2.transpose(0, 1).contiguous()
+#         output_2 = self.encoder2(x_2)
+#         out_2 = output_2.permute(1, 2, 0).contiguous()
+#
+#         x_3 = x_3.transpose(0, 1).contiguous()
+#         state, output_3 = self.encoder3(x_3)
+#         out_3 = output_3.permute(1, 2, 0).contiguous()
+#         out = torch.stack([out, out_2, out_3], dim=3)
+#
+#         # go through a relu function to make sure the feature maps are all positive
+#         out = torch.relu(out)
+#
+#         if return_nl_map is True:
+#             out, f_div_C, W_y = self.no_local(out, return_nl_map=True)
+#             out = torch.flatten(out,1)
+#             y = self.projector(out)
+#             return y, f_div_C, W_y
+#
+#         else:
+#             out = self.no_local(out, return_nl_map=False)
+#             out = torch.flatten(out,1)
+#             y = self.projector(out)
+#             return y
+
 
 class MSFNv1(nn.Module):
     def __init__(self, encoder1, encoder2, encoder3, n_hidden=args.hidden_dim):
